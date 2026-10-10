@@ -1,0 +1,146 @@
+name: Publish NuGet
+
+# Publishes both packages to NuGet.org from a v* tag.
+# Authentication uses NuGet Trusted Publishing (GitHub OIDC); no long-lived API key is stored.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build, verify and publish to NuGet.org
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: nuget-release
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Verify release tag and version
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import sys
+          import xml.etree.ElementTree as ET
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          if not tag.startswith("v") or len(tag) == 1:
+              print(f"ERROR: expected a v* release tag, got {tag!r}", file=sys.stderr)
+              sys.exit(1)
+
+          package_version = ET.parse("src/Packaging.props").getroot().findtext(".//Version")
+          if not package_version:
+              print("ERROR: <Version> not found in src/Packaging.props", file=sys.stderr)
+              sys.exit(1)
+
+          tag_version = tag[1:]
+          print(f"Tag version:     {tag_version}")
+          print(f"Package version: {package_version}")
+
+          if tag_version != package_version:
+              print("ERROR: Git tag version does not match src/Packaging.props", file=sys.stderr)
+              sys.exit(1)
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"PACKAGE_VERSION={package_version}\n")
+          PY
+
+      - name: Verify tagged commit is on main
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"; then
+            echo "ERROR: release tag must point to a commit reachable from main"
+            exit 1
+          fi
+
+      - name: Restore solution projects
+        run: |
+          dotnet restore src/Db2.Tests/Db2.Tests.csproj --nologo -v q
+          dotnet restore src/Db2.IBMCompat/Db2.IBMCompat.csproj --nologo -v q
+
+      - name: Build Release
+        run: |
+          dotnet build src/Db2.Tests/Db2.Tests.csproj -c Release --no-restore --nologo -v q
+          dotnet build src/Db2.IBMCompat/Db2.IBMCompat.csproj -c Release --no-restore --nologo -v q
+
+      - name: Offline unit, protocol and API surface tests
+        run: >-
+          dotnet test src/Db2.Tests/Db2.Tests.csproj -c Release --no-build --nologo -v q
+          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
+          --logger 'trx;LogFileName=offline.trx'
+          --results-directory '${{ runner.temp }}/offline-test-results'
+
+      - name: Reject skipped offline tests
+        run: python3 scripts/check-trx-no-skips.py '${{ runner.temp }}/offline-test-results/offline.trx'
+
+      - name: Pack both packages once
+        run: |
+          rm -rf release-out && mkdir release-out
+          dotnet pack src/Db2.Driver/Db2.Driver.csproj -c Release --no-restore --nologo -v q -o release-out
+          dotnet pack src/Db2.IBMCompat/Db2.IBMCompat.csproj -c Release --no-restore --nologo -v q -o release-out
+
+      - name: Verify package and symbol artifacts
+        shell: bash
+        run: |
+          for package_id in JustyBase.Db2 JustyBase.Db2.IBMCompat; do
+            test -f "release-out/${package_id}.${PACKAGE_VERSION}.nupkg"
+            test -f "release-out/${package_id}.${PACKAGE_VERSION}.snupkg"
+          done
+
+      - name: Package contents and allowlist validation
+        run: python3 tools/sbom/check_package_contents.py release-out
+
+      - name: Consumer smoke test against the packed artifacts
+        run: python3 tests/PackageConsumer/run_package_consumer_smoke.py release-out
+
+      - name: Generate SBOM per package (offline)
+        run: python3 tools/sbom/generate_cs_sbom.py release-out
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: JustyBase.Db2-${{ env.PACKAGE_VERSION }}-release
+          path: release-out/
+          if-no-files-found: error
+
+      - name: NuGet.org login via Trusted Publishing
+        id: nuget-login
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: KrzysztofDusko
+
+      - name: Publish JustyBase.Db2
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: >-
+          dotnet nuget push "release-out/JustyBase.Db2.${PACKAGE_VERSION}.nupkg"
+          --api-key "$NUGET_API_KEY"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: Publish JustyBase.Db2.IBMCompat
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: >-
+          dotnet nuget push "release-out/JustyBase.Db2.IBMCompat.${PACKAGE_VERSION}.nupkg"
+          --api-key "$NUGET_API_KEY"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
