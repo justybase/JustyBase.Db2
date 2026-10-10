@@ -1,6 +1,6 @@
 name: Publish NuGet
 
-# Publishes both packages to NuGet.org from an annotated or lightweight v* tag.
+# Publishes both packages to NuGet.org from a v* tag.
 # Authentication uses NuGet Trusted Publishing (GitHub OIDC); no long-lived API key is stored.
 on:
   push:
@@ -84,7 +84,7 @@ jobs:
       - name: Offline unit, protocol and API surface tests
         run: >-
           dotnet test src/Db2.Tests/Db2.Tests.csproj -c Release --no-build --nologo -v q
-          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
+          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
           --logger 'trx;LogFileName=offline.trx'
           --results-directory '${{ runner.temp }}/offline-test-results'
 
@@ -96,6 +96,14 @@ jobs:
           rm -rf release-out && mkdir release-out
           dotnet pack src/Db2.Driver/Db2.Driver.csproj -c Release --no-restore --nologo -v q -o release-out
           dotnet pack src/Db2.IBMCompat/Db2.IBMCompat.csproj -c Release --no-restore --nologo -v q -o release-out
+
+      - name: Verify package and symbol artifacts
+        shell: bash
+        run: |
+          for package_id in JustyBase.Db2 JustyBase.Db2.IBMCompat; do
+            test -f "release-out/${package_id}.${PACKAGE_VERSION}.nupkg"
+            test -f "release-out/${package_id}.${PACKAGE_VERSION}.snupkg"
+          done
 
       - name: Package contents and allowlist validation
         run: python3 tools/sbom/check_package_contents.py release-out
