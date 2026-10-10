@@ -1,0 +1,43 @@
+<Project>
+  <!--
+    Shared NuGet packaging settings for the shipped packages (JustyBase.Db2 and JustyBase.Db2.IBMCompat).
+    Imported explicitly by each packable project; test projects do not import it.
+    Keep this version prerelease until a separate release decision is made.
+  -->
+  <PropertyGroup>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>Krzysztof Dusko</Authors>
+    <Copyright>Copyright (c) 2026 Krzysztof Dusko</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://github.com/justybase/JustyBase.Db2</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Repository metadata and Source Link: symbols resolve to the exact commit on GitHub. -->
+    <RepositoryUrl>https://github.com/justybase/JustyBase.Db2</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>main</RepositoryBranch>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <!-- Source paths are normalized on GitHub Actions so Source Link maps every file to the repository. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- SDK package validation without a baseline: there is no earlier stable package to compare with yet. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Public XML documentation is incomplete for the alpha surface; tracked as a SHOULD FIX, not hidden. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\assets\icon.png" Pack="true" PackagePath="\" Link="icon.png" />
+  </ItemGroup>
+</Project>

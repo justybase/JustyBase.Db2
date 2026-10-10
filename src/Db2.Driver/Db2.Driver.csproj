@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Packaging.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Required by the LibraryImport generator for the isolated libgssapi_krb5 interop. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>JustyBase.Db2</RootNamespace>
+    <AssemblyName>JustyBase.Db2</AssemblyName>
+    <PackageId>JustyBase.Db2</PackageId>
+    <Description>Experimental managed .NET 10 driver for IBM Db2 LUW (DRDA over TCP/TLS) with a native async API and an ADO.NET provider. Alpha prerelease: APIs and protocol coverage may change, and it is not recommended for production use yet.</Description>
+    <PackageTags>db2;ibm;drda;ado.net;database;driver;experimental;alpha</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <!-- Keep trim/AOT analysis on for every consumer build. The driver public
+         surface must not acquire an unannotated reflection dependency. -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="\" Link="LICENSE" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" Link="THIRD-PARTY-NOTICES.md" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Db2PerformanceCounters)' == 'true'">
+    <DefineConstants>$(DefineConstants);DB2_PERF_COUNTERS</DefineConstants>
+  </PropertyGroup>
+</Project>

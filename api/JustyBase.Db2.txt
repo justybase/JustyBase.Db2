@@ -1,0 +1,716 @@
+type class JustyBase.Db2.AdoNet.Db2AdoCommand
+  .ctor()
+  System.Int32 ExecuteNonQuery()
+  System.Object ExecuteScalar()
+  System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int32> ExecuteNonQueryAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Object> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken)
+  System.Void Cancel()
+  System.Void Prepare()
+  protected System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior)
+  protected System.Data.Common.DbParameter CreateDbParameter()
+  protected System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken)
+  protected System.Void Dispose(System.Boolean disposing)
+  System.String CommandText { get;set; }
+  System.Int32 CommandTimeout { get;set; }
+  System.Data.CommandType CommandType { get;set; }
+  JustyBase.Db2.AdoNet.Db2AdoConnection Connection { get;set; }
+  System.Data.Common.DbConnection DbConnection { get;set; }
+  System.Data.Common.DbParameterCollection DbParameterCollection { get; }
+  System.Data.Common.DbTransaction DbTransaction { get;set; }
+  System.Boolean DesignTimeVisible { get;set; }
+  JustyBase.Db2.AdoNet.Db2AdoParameterCollection Parameters { get; }
+  JustyBase.Db2.AdoNet.Db2AdoTransaction Transaction { get;set; }
+  System.Data.UpdateRowSource UpdatedRowSource { get;set; }
+type class JustyBase.Db2.AdoNet.Db2AdoConnection
+  .ctor()
+  .ctor(System.String connectionString)
+  System.Data.DataTable GetSchema()
+  System.Data.DataTable GetSchema(System.String collectionName)
+  System.Data.DataTable GetSchema(System.String collectionName, System.String[] restrictionValues)
+  System.Threading.Tasks.Task ChangeDatabaseAsync(System.String databaseName, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task CloseAsync()
+  System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+  System.Void ChangeDatabase(System.String databaseName)
+  System.Void Close()
+  System.Void Open()
+  protected System.Data.Common.DbCommand CreateDbCommand()
+  protected System.Data.Common.DbTransaction BeginDbTransaction(System.Data.IsolationLevel isolationLevel)
+  protected System.Threading.Tasks.Task CloseAsync(System.Boolean cancelActiveOperations)
+  protected System.Threading.Tasks.ValueTask<System.Data.Common.DbTransaction> BeginDbTransactionAsync(System.Data.IsolationLevel isolationLevel, System.Threading.CancellationToken cancellationToken)
+  protected System.Void Dispose(System.Boolean disposing)
+  protected System.Void OnInfoMessage(JustyBase.Db2.AdoNet.Db2AdoInfoMessageEventArgs args)
+  protected internal System.Exception TranslateOperationCancellation(System.Exception error)
+  protected internal System.Exception TranslateProviderError(System.Exception error)
+  static System.Void ClearAllPools()
+  System.String ConnectionString { get;set; }
+  System.Int32 ConnectionTimeout { get; }
+  System.String DataSource { get; }
+  System.String Database { get; }
+  System.String ServerVersion { get; }
+  System.Data.ConnectionState State { get; }
+  event System.EventHandler<JustyBase.Db2.AdoNet.Db2AdoInfoMessageEventArgs> InfoMessage
+type class JustyBase.Db2.AdoNet.Db2AdoConnectionStringBuilder
+  .ctor()
+  System.Int32 ConnectTimeout { get;set; }
+  System.String Database { get;set; }
+  System.Int32 MaxPoolSize { get;set; }
+  System.Int32 MaxWaiters { get;set; }
+  System.String Password { get;set; }
+  System.Int32 PoolAcquireTimeout { get;set; }
+  System.Int32 PoolConnectTimeout { get;set; }
+  System.Int32 PoolIdleTimeout { get;set; }
+  System.Int32 PoolMaxLifetime { get;set; }
+  System.Boolean Pooling { get;set; }
+  System.String Server { get;set; }
+  System.Boolean UseSSL { get;set; }
+  System.String UserID { get;set; }
+type class JustyBase.Db2.AdoNet.Db2AdoDataReader
+  System.Boolean GetBoolean(System.Int32 ordinal)
+  System.Boolean IsDBNull(System.Int32 ordinal)
+  System.Boolean NextResult()
+  System.Boolean Read()
+  System.Byte GetByte(System.Int32 ordinal)
+  System.Char GetChar(System.Int32 ordinal)
+  System.Collections.IEnumerator GetEnumerator()
+  System.Data.DataTable GetSchemaTable()
+  System.DateTime GetDateTime(System.Int32 ordinal)
+  System.Decimal GetDecimal(System.Int32 ordinal)
+  System.Double GetDouble(System.Int32 ordinal)
+  System.Guid GetGuid(System.Int32 ordinal)
+  System.IO.Stream GetStream(System.Int32 ordinal)
+  System.IO.TextReader GetTextReader(System.Int32 ordinal)
+  System.Int16 GetInt16(System.Int32 ordinal)
+  System.Int32 GetInt32(System.Int32 ordinal)
+  System.Int32 GetOrdinal(System.String name)
+  System.Int32 GetValues(System.Object[] values)
+  System.Int64 GetBytes(System.Int32 ordinal, System.Int64 dataOffset, System.Byte[] buffer, System.Int32 bufferOffset, System.Int32 length)
+  System.Int64 GetChars(System.Int32 ordinal, System.Int64 dataOffset, System.Char[] buffer, System.Int32 bufferOffset, System.Int32 length)
+  System.Int64 GetInt64(System.Int32 ordinal)
+  System.Object GetValue(System.Int32 ordinal)
+  System.Single GetFloat(System.Int32 ordinal)
+  System.String GetDataTypeName(System.Int32 ordinal)
+  System.String GetName(System.Int32 ordinal)
+  System.String GetString(System.Int32 ordinal)
+  System.Threading.Tasks.Task CloseAsync()
+  System.Threading.Tasks.Task<System.Boolean> IsDBNullAsync(System.Int32 ordinal, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Boolean> NextResultAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Boolean> ReadAsync(System.Threading.CancellationToken cancellationToken)
+  System.Type GetFieldType(System.Int32 ordinal)
+  System.Void Close()
+  T GetFieldValue`1(System.Int32 ordinal)
+  System.Int32 Depth { get; }
+  System.Int32 FieldCount { get; }
+  System.Boolean HasRows { get; }
+  System.Boolean IsClosed { get; }
+  System.Object Item { get; }
+  System.Object Item { get; }
+  System.Int32 RecordsAffected { get; }
+  System.Int32 VisibleFieldCount { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoException
+  .ctor(System.String message, JustyBase.Db2.Db2ErrorKind errorKind, System.Nullable<System.Int32> sqlCode, System.String sqlState, System.Exception innerException)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoImportException
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Int64 FirstRowNumber { get; }
+  System.Int64 LastRowNumber { get; }
+  System.Nullable<System.Int64> RowNumber { get; }
+  System.Int64 RowsCommitted { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoImportOptions
+  .ctor()
+  JustyBase.Db2.AdoNet.Db2AdoImportOptions <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.AdoNet.Db2AdoImportOptions other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Int32 BatchSize { get;init; }
+  System.Int32 CommandTimeout { get;init; }
+  System.Int32 CommitEveryRows { get;init; }
+  System.Int64 MaxBatchBytes { get;init; }
+  System.Int32 NotifyAfterRows { get;init; }
+  System.Boolean TableLock { get;init; }
+type class JustyBase.Db2.AdoNet.Db2AdoImportProgress
+  .ctor(System.Int64 RowsRead, System.Int64 RowsInserted, System.Int64 RowsCommitted)
+  JustyBase.Db2.AdoNet.Db2AdoImportProgress <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.AdoNet.Db2AdoImportProgress other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int64& RowsRead, System.Int64& RowsInserted, System.Int64& RowsCommitted)
+  System.Int64 RowsCommitted { get;init; }
+  System.Int64 RowsInserted { get;init; }
+  System.Int64 RowsRead { get;init; }
+type class JustyBase.Db2.AdoNet.Db2AdoImportResult
+  .ctor(System.Int64 RowsRead, System.Int64 RowsInserted, System.Int64 RowsCommitted)
+  JustyBase.Db2.AdoNet.Db2AdoImportResult <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.AdoNet.Db2AdoImportResult other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int64& RowsRead, System.Int64& RowsInserted, System.Int64& RowsCommitted)
+  System.Int64 RowsCommitted { get;init; }
+  System.Int64 RowsInserted { get;init; }
+  System.Int64 RowsRead { get;init; }
+type class JustyBase.Db2.AdoNet.Db2AdoImporter
+  static System.Threading.Tasks.Task<JustyBase.Db2.AdoNet.Db2AdoImportResult> ImportAsync(JustyBase.Db2.AdoNet.Db2AdoConnection connection, System.Data.IDataReader source, System.String destinationTable, System.Collections.Generic.IReadOnlyList<System.String> destinationColumns, JustyBase.Db2.AdoNet.Db2AdoImportOptions options, System.Data.Common.DbTransaction transaction, System.Action<JustyBase.Db2.AdoNet.Db2AdoImportProgress> progress, System.Threading.CancellationToken cancellationToken)
+type class JustyBase.Db2.AdoNet.Db2AdoInfoMessageEventArgs
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Warning> Errors { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoParameter
+  .ctor()
+  System.Void ResetDbType()
+  System.Data.DbType DbType { get;set; }
+  System.Data.ParameterDirection Direction { get;set; }
+  System.Boolean IsNullable { get;set; }
+  System.Boolean LeaveOpen { get;set; }
+  System.String ParameterName { get;set; }
+  System.Byte Precision { get;set; }
+  System.Byte Scale { get;set; }
+  System.Int32 Size { get;set; }
+  System.String SourceColumn { get;set; }
+  System.Boolean SourceColumnNullMapping { get;set; }
+  System.Data.DataRowVersion SourceVersion { get;set; }
+  System.Object Value { get;set; }
+type class JustyBase.Db2.AdoNet.Db2AdoParameterCollection
+  .ctor()
+  System.Boolean Contains(System.Object value)
+  System.Boolean Contains(System.String value)
+  System.Collections.IEnumerator GetEnumerator()
+  System.Int32 Add(System.Object value)
+  System.Int32 IndexOf(System.Object value)
+  System.Int32 IndexOf(System.String parameterName)
+  System.Void AddRange(System.Array values)
+  System.Void Clear()
+  System.Void CopyTo(System.Array array, System.Int32 index)
+  System.Void Insert(System.Int32 index, System.Object value)
+  System.Void Remove(System.Object value)
+  System.Void RemoveAt(System.Int32 index)
+  System.Void RemoveAt(System.String parameterName)
+  protected System.Data.Common.DbParameter GetParameter(System.Int32 index)
+  protected System.Data.Common.DbParameter GetParameter(System.String parameterName)
+  protected System.Void SetParameter(System.Int32 index, System.Data.Common.DbParameter value)
+  protected System.Void SetParameter(System.String parameterName, System.Data.Common.DbParameter value)
+  System.Int32 Count { get; }
+  System.Boolean IsFixedSize { get; }
+  System.Boolean IsReadOnly { get; }
+  System.Boolean IsSynchronized { get; }
+  System.Object SyncRoot { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoProviderFactory
+  System.Data.Common.DbCommand CreateCommand()
+  System.Data.Common.DbConnection CreateConnection()
+  System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder()
+  System.Data.Common.DbParameter CreateParameter()
+  JustyBase.Db2.AdoNet.Db2AdoProviderFactory Instance { get; }
+type class JustyBase.Db2.AdoNet.Db2AdoTransaction
+  System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+  System.Void Commit()
+  System.Void Rollback()
+  protected System.Void Dispose(System.Boolean disposing)
+  System.Data.Common.DbConnection DbConnection { get; }
+  System.Data.IsolationLevel IsolationLevel { get; }
+type class JustyBase.Db2.Db2AbandonedTransactionException
+  .ctor(System.Exception rollbackError)
+  System.Exception RollbackError { get; }
+type class JustyBase.Db2.Db2AuthenticationException
+  .ctor(System.Byte securityCheckCode)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Byte SecurityCheckCode { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2AuthorizationException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2BatchCancellationException
+  .ctor(System.Threading.CancellationToken cancellationToken, System.Int32 completedParameterSets, System.Nullable<System.Int32> inFlightParameterSetIndex, System.Int64 rowsAffected)
+  System.Int32 CompletedParameterSets { get; }
+  System.Nullable<System.Int32> InFlightParameterSetIndex { get; }
+  System.Int64 RowsAffected { get; }
+type class JustyBase.Db2.Db2BatchExecutionException
+  .ctor(System.Nullable<System.Int32> parameterSetIndex, System.Int32 completedParameterSets, System.Int64 rowsAffected, System.Exception innerException)
+  System.Int32 CompletedParameterSets { get; }
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> ParameterSetIndex { get; }
+  System.Int64 RowsAffected { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2BlobStream
+  .ctor(System.IO.Stream Source, System.Int64 Length, System.Boolean LeaveOpen)
+  JustyBase.Db2.Db2BlobStream <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2BlobStream other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.IO.Stream& Source, System.Int64& Length, System.Boolean& LeaveOpen)
+  System.Boolean LeaveOpen { get;init; }
+  System.Int64 Length { get;init; }
+  System.IO.Stream Source { get;init; }
+type class JustyBase.Db2.Db2ClientInfo
+  .ctor(System.String ApplicationName, System.String WorkstationName, System.String UserId, System.String Accounting, System.String CorrelationToken)
+  JustyBase.Db2.Db2ClientInfo <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2ClientInfo other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.String& ApplicationName, System.String& WorkstationName, System.String& UserId, System.String& Accounting, System.String& CorrelationToken)
+  System.String Accounting { get;init; }
+  System.String ApplicationName { get;init; }
+  System.String CorrelationToken { get;init; }
+  System.String UserId { get;init; }
+  System.String WorkstationName { get;init; }
+type class JustyBase.Db2.Db2ClobStream
+  .ctor(System.IO.Stream Source, System.Int64 Length, System.Boolean LeaveOpen)
+  JustyBase.Db2.Db2ClobStream <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2ClobStream other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.IO.Stream& Source, System.Int64& Length, System.Boolean& LeaveOpen)
+  System.Boolean LeaveOpen { get;init; }
+  System.Int64 Length { get;init; }
+  System.IO.Stream Source { get;init; }
+type class JustyBase.Db2.Db2ColumnMetadata
+  .ctor(System.String Name, JustyBase.Db2.Types.SqlType SqlType, System.UInt64 Length, System.UInt16 Precision, System.UInt16 Scale, System.Boolean Nullable)
+  JustyBase.Db2.Db2ColumnMetadata <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2ColumnMetadata other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.String& Name, JustyBase.Db2.Types.SqlType& SqlType, System.UInt64& Length, System.UInt16& Precision, System.UInt16& Scale, System.Boolean& Nullable)
+  System.UInt64 Length { get;init; }
+  System.String Name { get;init; }
+  System.Boolean Nullable { get;init; }
+  System.UInt16 Precision { get;init; }
+  System.UInt16 Scale { get;init; }
+  JustyBase.Db2.Types.SqlType SqlType { get;init; }
+type class JustyBase.Db2.Db2CommandOptions
+  .ctor(System.TimeSpan Timeout, System.TimeSpan CancellationCleanupTimeout)
+  JustyBase.Db2.Db2CommandOptions <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2CommandOptions other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.TimeSpan& Timeout, System.TimeSpan& CancellationCleanupTimeout)
+  System.TimeSpan CancellationCleanupTimeout { get;init; }
+  JustyBase.Db2.Db2ClientInfo ClientInfo { get;init; }
+  JustyBase.Db2.Db2CommandOptions Default { get; }
+  System.TimeSpan Timeout { get;init; }
+  System.String User { get;init; }
+type class JustyBase.Db2.Db2CommandTimeoutException
+  .ctor(System.TimeSpan timeout, System.Exception innerException)
+type class JustyBase.Db2.Db2Config
+  .ctor()
+  System.String ToString()
+  static JustyBase.Db2.Db2Config Parse(System.String dsn)
+  static System.String RedactDsn(System.String input)
+  System.Int32 BlockSize { get;set; }
+  System.String ClientAcctng { get;set; }
+  System.String ClientApplName { get;set; }
+  System.String ClientCorrToken { get;set; }
+  System.String ClientUserid { get;set; }
+  System.String ClientWrkstnName { get;set; }
+  System.String Database { get;set; }
+  System.String GssapiTokenFile { get;set; }
+  System.String Host { get;set; }
+  System.String KerberosPrincipal { get;set; }
+  System.String KerberosRealm { get;set; }
+  System.String KerberosSpn { get;set; }
+  System.String Krb5CcacheFile { get;set; }
+  System.String Krb5ConfigFile { get;set; }
+  System.String Krb5KeytabFile { get;set; }
+  System.Collections.Generic.Dictionary<System.String, System.String> Parameters { get; }
+  System.String Password { get;set; }
+  System.Int32 Port { get;set; }
+  System.UInt16 SecurityMechanism { get;set; }
+  System.String SslClientCertPath { get;set; }
+  System.String SslClientKeyPath { get;set; }
+  System.String SslRootCaPath { get;set; }
+  System.TimeSpan Timeout { get;set; }
+  System.Boolean UseSsl { get;set; }
+  System.String User { get;set; }
+type class JustyBase.Db2.Db2ConfigurationException
+  .ctor(System.String message, System.Exception innerException)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2ConnectionClosedException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2DatabaseNotFoundException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2DbClobStream
+  .ctor(System.IO.Stream Source, System.Int64 Length, System.Boolean LeaveOpen)
+  JustyBase.Db2.Db2DbClobStream <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2DbClobStream other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.IO.Stream& Source, System.Int64& Length, System.Boolean& LeaveOpen)
+  System.Boolean LeaveOpen { get;init; }
+  System.Int64 Length { get;init; }
+  System.IO.Stream Source { get;init; }
+type class JustyBase.Db2.Db2Diagnostics
+  System.Diagnostics.ActivitySource Activities { get; }
+  System.Diagnostics.Metrics.Meter Meter { get; }
+type enum JustyBase.Db2.Db2ErrorKind
+  static JustyBase.Db2.Db2ErrorKind Authentication
+  static JustyBase.Db2.Db2ErrorKind Authorization
+  static JustyBase.Db2.Db2ErrorKind BatchExecution
+  static JustyBase.Db2.Db2ErrorKind Configuration
+  static JustyBase.Db2.Db2ErrorKind ConnectionClosed
+  static JustyBase.Db2.Db2ErrorKind DatabaseNotFound
+  static JustyBase.Db2.Db2ErrorKind ParameterConversion
+  static JustyBase.Db2.Db2ErrorKind PoolExhausted
+  static JustyBase.Db2.Db2ErrorKind PoolTimeout
+  static JustyBase.Db2.Db2ErrorKind Protocol
+  static JustyBase.Db2.Db2ErrorKind ResourceLimit
+  static JustyBase.Db2.Db2ErrorKind ServerError
+  static JustyBase.Db2.Db2ErrorKind SqlError
+  static JustyBase.Db2.Db2ErrorKind Transport
+  static JustyBase.Db2.Db2ErrorKind Unsupported
+type class JustyBase.Db2.Db2ExecutionResult
+  .ctor(System.Int64 RowsAffected, System.Collections.Generic.IReadOnlyList<System.Object> OutputParameters)
+  JustyBase.Db2.Db2ExecutionResult <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2ExecutionResult other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int64& RowsAffected, System.Collections.Generic.IReadOnlyList<System.Object>& OutputParameters)
+  System.Collections.Generic.IReadOnlyList<System.Object> OutputParameters { get;init; }
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ResultSet> ResultSets { get;init; }
+  System.Int64 RowsAffected { get;init; }
+type class JustyBase.Db2.Db2InsertResult
+  .ctor(System.Int64 RowsAffected, System.Int64 LastInsertId)
+  JustyBase.Db2.Db2InsertResult <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2InsertResult other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int64& RowsAffected, System.Int64& LastInsertId)
+  System.Int64 LastInsertId { get;init; }
+  System.Int64 RowsAffected { get;init; }
+type enum JustyBase.Db2.Db2IsolationLevel
+  static JustyBase.Db2.Db2IsolationLevel CursorStability
+  static JustyBase.Db2.Db2IsolationLevel ReadStability
+  static JustyBase.Db2.Db2IsolationLevel RepeatableRead
+  static JustyBase.Db2.Db2IsolationLevel UncommittedRead
+  static JustyBase.Db2.Db2IsolationLevel Unspecified
+type class JustyBase.Db2.Db2KerberosException
+  .ctor(System.String message, System.Exception innerException)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2LobValue
+  System.IO.Stream OpenReadStream()
+  System.IO.TextReader OpenTextReader()
+  System.Nullable<System.Int64> ByteLength { get; }
+  System.Boolean IsText { get; }
+type enum JustyBase.Db2.Db2OperationOutcome
+  static JustyBase.Db2.Db2OperationOutcome Confirmed
+  static JustyBase.Db2.Db2OperationOutcome NotStarted
+  static JustyBase.Db2.Db2OperationOutcome Unknown
+type class JustyBase.Db2.Db2Parameter
+  .ctor(System.Object Value, JustyBase.Db2.Db2ParameterDirection Direction)
+  JustyBase.Db2.Db2Parameter <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2Parameter other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Object& Value, JustyBase.Db2.Db2ParameterDirection& Direction)
+  JustyBase.Db2.Db2ParameterDirection Direction { get;init; }
+  System.Object Value { get;init; }
+type enum JustyBase.Db2.Db2ParameterDirection
+  static JustyBase.Db2.Db2ParameterDirection Input
+  static JustyBase.Db2.Db2ParameterDirection InputOutput
+  static JustyBase.Db2.Db2ParameterDirection Output
+type class JustyBase.Db2.Db2Pool
+  .ctor(JustyBase.Db2.Db2Config config, JustyBase.Db2.Db2PoolOptions options)
+  .ctor(System.String dsn, JustyBase.Db2.Db2PoolOptions options)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task ShutdownAsync(System.Nullable<System.TimeSpan> timeout, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAdminCommandAsync(System.String command, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<T> WithSessionAsync`1(System.Func<JustyBase.Db2.Db2Session, System.Threading.CancellationToken, System.Threading.Tasks.Task<T>> operation, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+  System.Int32 ActiveSessionCount { get; }
+  System.Int32 IdleSessionCount { get; }
+  System.Boolean IsClosed { get; }
+  System.Int32 SessionCount { get; }
+  System.Int32 WaitingCount { get; }
+type class JustyBase.Db2.Db2PoolExhaustedException
+  .ctor()
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2PoolOptions
+  .ctor(System.Int32 MaxConnections)
+  JustyBase.Db2.Db2PoolOptions <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2PoolOptions other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int32& MaxConnections)
+  System.TimeSpan AcquireTimeout { get;init; }
+  System.TimeSpan ConnectTimeout { get;init; }
+  System.TimeSpan IdleTimeout { get;init; }
+  System.Int32 MaxConnections { get;init; }
+  System.TimeSpan MaxLifetime { get;init; }
+  System.Int32 MaxWaiters { get;init; }
+  System.TimeSpan ReapInterval { get;init; }
+type class JustyBase.Db2.Db2PoolTimeoutException
+  .ctor()
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2QueryResult
+  .ctor(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns, System.Collections.Generic.IReadOnlyList<System.Object[]> Rows)
+  JustyBase.Db2.Db2QueryResult <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2QueryResult other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata>& Columns, System.Collections.Generic.IReadOnlyList<System.Object[]>& Rows)
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns { get;init; }
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ResultSet> ResultSets { get;init; }
+  System.Collections.Generic.IReadOnlyList<System.Object[]> Rows { get;init; }
+type class JustyBase.Db2.Db2ResourceLimitException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2ResultSet
+  .ctor(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns, System.Collections.Generic.IReadOnlyList<System.Object[]> Rows)
+  JustyBase.Db2.Db2ResultSet <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2ResultSet other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata>& Columns, System.Collections.Generic.IReadOnlyList<System.Object[]>& Rows)
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns { get;init; }
+  System.Collections.Generic.IReadOnlyList<System.Object[]> Rows { get;init; }
+type class JustyBase.Db2.Db2ServerErrorException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2Session
+  JustyBase.Db2.Db2ClientInfo GetClientInfo()
+  System.Boolean ClientInfoMatches(JustyBase.Db2.Db2ClientInfo info)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task PingAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task ResetClientInfoAsync(JustyBase.Db2.Db2ClientInfo info, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task SetClientInfoAsync(JustyBase.Db2.Db2ClientInfo info, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task SwitchUserAsync(System.String user, System.String password, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task SwitchUserAsync(System.String user, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(System.String sql, System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(System.String sql, System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2Statement> PrepareAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2Transaction> BeginTransactionAsync(JustyBase.Db2.Db2IsolationLevel isolation, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2Transaction> BeginTransactionAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Boolean> InterruptAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAdminCommandAsync(System.String command, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+  static System.Threading.Tasks.Task<JustyBase.Db2.Db2Session> ConnectAsync(JustyBase.Db2.Db2Config config, System.Threading.CancellationToken cancellationToken)
+  static System.Threading.Tasks.Task<JustyBase.Db2.Db2Session> ConnectAsync(System.String dsn, System.Threading.CancellationToken cancellationToken)
+  System.Boolean AutoCommit { get;set; }
+  System.String CurrentSessionUser { get; }
+  System.Boolean IsClosed { get; }
+  event System.EventHandler<JustyBase.Db2.Db2WarningEventArgs> Warning
+type class JustyBase.Db2.Db2SqlException
+  .ctor(System.Int32 sqlCode, System.String sqlState, System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2Statement
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Void Close()
+  System.Boolean IsClosed { get; }
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> OutputColumns { get; }
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> ParameterColumns { get; }
+  System.String Sql { get; }
+type class JustyBase.Db2.Db2StreamRow
+  .ctor(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns, System.Object[] Values)
+  JustyBase.Db2.Db2StreamRow <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2StreamRow other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata>& Columns, System.Object[]& Values)
+  System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2ColumnMetadata> Columns { get;init; }
+  System.Object[] Values { get;init; }
+type class JustyBase.Db2.Db2Transaction
+  System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2InsertResult> ExecuteInsertAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<JustyBase.Db2.Db2QueryResult> QueryAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+type class JustyBase.Db2.Db2UnsupportedFeatureException
+  .ctor(System.String message)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class JustyBase.Db2.Db2Warning
+  .ctor(System.Int32 SqlCode, System.String SqlState, System.String Message, System.String WarningFlags)
+  JustyBase.Db2.Db2Warning <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2Warning other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.Int32& SqlCode, System.String& SqlState, System.String& Message, System.String& WarningFlags)
+  System.String Message { get;init; }
+  System.Int32 SqlCode { get;init; }
+  System.String SqlState { get;init; }
+  System.String WarningFlags { get;init; }
+type class JustyBase.Db2.Db2WarningEventArgs
+  .ctor(JustyBase.Db2.Db2Warning warning)
+  JustyBase.Db2.Db2Warning Warning { get; }
+type class JustyBase.Db2.Db2XmlStream
+  .ctor(System.IO.Stream Source, System.Int64 Length, System.Boolean LeaveOpen)
+  JustyBase.Db2.Db2XmlStream <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2XmlStream other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Void Deconstruct(System.IO.Stream& Source, System.Int64& Length, System.Boolean& LeaveOpen)
+  System.Boolean LeaveOpen { get;init; }
+  System.Int64 Length { get;init; }
+  System.IO.Stream Source { get;init; }
+type interface JustyBase.Db2.IDb2Error
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  JustyBase.Db2.Db2OperationOutcome Outcome { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type enum JustyBase.Db2.Types.SqlType
+  static JustyBase.Db2.Types.SqlType BigInt
+  static JustyBase.Db2.Types.SqlType Binary
+  static JustyBase.Db2.Types.SqlType Blob
+  static JustyBase.Db2.Types.SqlType BlobLocator
+  static JustyBase.Db2.Types.SqlType Boolean
+  static JustyBase.Db2.Types.SqlType CStr
+  static JustyBase.Db2.Types.SqlType Char
+  static JustyBase.Db2.Types.SqlType Clob
+  static JustyBase.Db2.Types.SqlType ClobLocator
+  static JustyBase.Db2.Types.SqlType DataLink
+  static JustyBase.Db2.Types.SqlType Date
+  static JustyBase.Db2.Types.SqlType DbClob
+  static JustyBase.Db2.Types.SqlType DbClobLocator
+  static JustyBase.Db2.Types.SqlType DecFloat
+  static JustyBase.Db2.Types.SqlType Decimal
+  static JustyBase.Db2.Types.SqlType FakeNUDT
+  static JustyBase.Db2.Types.SqlType FakeUDT
+  static JustyBase.Db2.Types.SqlType Float
+  static JustyBase.Db2.Types.SqlType Graphic
+  static JustyBase.Db2.Types.SqlType Integer
+  static JustyBase.Db2.Types.SqlType LStr
+  static JustyBase.Db2.Types.SqlType LonGraph
+  static JustyBase.Db2.Types.SqlType Long
+  static JustyBase.Db2.Types.SqlType NBigInt
+  static JustyBase.Db2.Types.SqlType NBinary
+  static JustyBase.Db2.Types.SqlType NBlob
+  static JustyBase.Db2.Types.SqlType NBlobLocator
+  static JustyBase.Db2.Types.SqlType NBoolean
+  static JustyBase.Db2.Types.SqlType NCStr
+  static JustyBase.Db2.Types.SqlType NChar
+  static JustyBase.Db2.Types.SqlType NClob
+  static JustyBase.Db2.Types.SqlType NClobLocator
+  static JustyBase.Db2.Types.SqlType NDataLink
+  static JustyBase.Db2.Types.SqlType NDate
+  static JustyBase.Db2.Types.SqlType NDbClob
+  static JustyBase.Db2.Types.SqlType NDbClobLocator
+  static JustyBase.Db2.Types.SqlType NDecFloat
+  static JustyBase.Db2.Types.SqlType NDecimal
+  static JustyBase.Db2.Types.SqlType NFloat
+  static JustyBase.Db2.Types.SqlType NGraphic
+  static JustyBase.Db2.Types.SqlType NInteger
+  static JustyBase.Db2.Types.SqlType NLStr
+  static JustyBase.Db2.Types.SqlType NLonGraph
+  static JustyBase.Db2.Types.SqlType NLong
+  static JustyBase.Db2.Types.SqlType NNumeric
+  static JustyBase.Db2.Types.SqlType NRowID
+  static JustyBase.Db2.Types.SqlType NSmall
+  static JustyBase.Db2.Types.SqlType NTime
+  static JustyBase.Db2.Types.SqlType NTimestamp
+  static JustyBase.Db2.Types.SqlType NVarBinary
+  static JustyBase.Db2.Types.SqlType NVarChar
+  static JustyBase.Db2.Types.SqlType NVarGraph
+  static JustyBase.Db2.Types.SqlType NXML
+  static JustyBase.Db2.Types.SqlType NZoned
+  static JustyBase.Db2.Types.SqlType Numeric
+  static JustyBase.Db2.Types.SqlType RowID
+  static JustyBase.Db2.Types.SqlType Small
+  static JustyBase.Db2.Types.SqlType Time
+  static JustyBase.Db2.Types.SqlType Timestamp
+  static JustyBase.Db2.Types.SqlType VarBinary
+  static JustyBase.Db2.Types.SqlType VarChar
+  static JustyBase.Db2.Types.SqlType VarGraph
+  static JustyBase.Db2.Types.SqlType XML
+  static JustyBase.Db2.Types.SqlType Zoned
+type class JustyBase.Db2.Types.SqlTypeNames
+  static JustyBase.Db2.Types.SqlType BaseType(JustyBase.Db2.Types.SqlType type)
+  static System.Boolean IsNullable(JustyBase.Db2.Types.SqlType type)
+  static System.String Get(JustyBase.Db2.Types.SqlType type)

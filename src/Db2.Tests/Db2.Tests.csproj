@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Db2.Driver/Db2.Driver.csproj" />
+    <ProjectReference Include="../../benchmarks/Db2ReplayServer/Db2ReplayServer.csproj" />
+    <ProjectReference Include="../Db2.IBMCompat/Db2.IBMCompat.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures/Drda/**/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

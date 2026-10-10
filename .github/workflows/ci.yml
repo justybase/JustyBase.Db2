@@ -1,0 +1,185 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Build and offline tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Build test project
+        run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
+
+      - name: Offline unit and protocol tests
+        run: >-
+          dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo -v q
+          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
+          --logger 'trx;LogFileName=offline.trx'
+          --results-directory '${{ runner.temp }}/offline-test-results'
+
+      - name: Reject skipped offline tests
+        run: python3 scripts/check-trx-no-skips.py '${{ runner.temp }}/offline-test-results/offline.trx'
+
+      - name: Upload offline test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: db2-offline-test-results
+          path: ${{ runner.temp }}/offline-test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Restore packable projects
+        run: |
+          dotnet restore src/Db2.Driver/Db2.Driver.csproj --nologo -v q
+          dotnet restore src/Db2.IBMCompat/Db2.IBMCompat.csproj --nologo -v q
+
+      - name: Pack both packages once
+        run: |
+          mkdir -p '${{ runner.temp }}/packages'
+          dotnet pack src/Db2.Driver/Db2.Driver.csproj -c Release --nologo -v q -o '${{ runner.temp }}/packages'
+          dotnet pack src/Db2.IBMCompat/Db2.IBMCompat.csproj -c Release --nologo -v q -o '${{ runner.temp }}/packages'
+
+      - name: Check nupkg contents
+        run: python3 tools/sbom/check_package_contents.py '${{ runner.temp }}/packages'
+
+      - name: Consumer smoke test against the packed artifacts
+        run: python3 tests/PackageConsumer/run_package_consumer_smoke.py '${{ runner.temp }}/packages'
+
+      - name: Generate SBOM per package (offline)
+        run: python3 tools/sbom/generate_cs_sbom.py '${{ runner.temp }}/packages'
+
+  platform-smoke:
+    name: Platform smoke (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Build platform smoke tests
+        run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
+
+      - name: Run protocol and public API smoke tests
+        shell: bash
+        run: >-
+          dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo -v q
+          --filter 'Category=PlatformSmoke'
+          --logger 'trx;LogFileName=platform-smoke.trx'
+          --results-directory '${{ runner.temp }}/platform-smoke-results'
+
+      - name: Upload platform smoke results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: db2-platform-smoke-${{ matrix.os }}
+          path: ${{ runner.temp }}/platform-smoke-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  live-smoke:
+    name: Db2 live smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Run isolated Db2 smoke suite
+        env:
+          DB2_IT_REPORT_DIR: ${{ runner.temp }}/db2-live-smoke-results
+        run: ./scripts/test-db2-integration.sh
+
+      - name: Reject skipped Db2 smoke tests
+        if: success()
+        run: python3 scripts/check-trx-no-skips.py '${{ runner.temp }}/db2-live-smoke-results/'*.trx
+
+      - name: Upload Db2 smoke results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: db2-live-smoke-results
+          path: ${{ runner.temp }}/db2-live-smoke-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ibm-parity:
+    name: IBM provider parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Run isolated IBM provider parity suite
+        env:
+          DB2_IBM_PARITY_REPORT_DIR: ${{ runner.temp }}/ibm-parity-results
+        run: ./scripts/test-ibm-parity.sh
+
+      - name: Reject skipped IBM parity tests
+        if: success()
+        run: python3 scripts/check-trx-no-skips.py '${{ runner.temp }}/ibm-parity-results/'*.trx
+
+      - name: Upload IBM parity results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: db2-ibm-parity-results
+          path: ${{ runner.temp }}/ibm-parity-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ci-gate:
+    name: CI gate
+    needs:
+      - offline
+      - platform-smoke
+      - live-smoke
+      - ibm-parity
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All required CI lanes passed"

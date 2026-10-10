@@ -1,0 +1,37 @@
+# Repository metadata and generated build/test output
+.git/
+**/bin/
+**/obj/
+TestResults/
+**/TestResults/
+**/coverage/
+*.coverage
+*.coveragexml
+*.trx
+*.user
+sbom-out/
+release-out/
+*.nupkg
+*.snupkg
+
+# Kerberos test material must never be committed
+*.keytab
+*.ccache
+krb5cc_*
+*.password
+.env
+
+# Private keys and certificates must never be committed. Tests generate TLS material at run time.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+generated-tls/
+
+# Generated benchmark outputs; curated aggregate Markdown reports remain tracked.
+benchmarks/ReaderBench/results/
+benchmarks/P1Fetch/raw/*.jsonl
+benchmarks/Go2Parity/raw/*.jsonl
+benchmarks/Go2Parity/raw/docker-ps-*.log
+benchmarks/Go2Parity/raw/report.json

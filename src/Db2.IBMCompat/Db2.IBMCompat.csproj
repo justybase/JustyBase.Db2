@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="../Packaging.props" />
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>IBM.Data.Db2</RootNamespace>
+    <AssemblyName>JustyBase.Db2.IBMCompat</AssemblyName>
+    <PackageId>JustyBase.Db2.IBMCompat</PackageId>
+    <Description>Optional compatibility layer for migrating selected IBM.Data.Db2 APIs to the JustyBase.Db2 managed .NET driver. Not a complete replacement for the IBM provider. New applications should use JustyBase.Db2.</Description>
+    <PackageTags>db2;ibm;ado.net;drda;migration;compatibility;experimental;alpha</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="IBM-DATA-DB2-MIGRATION.md" Pack="true" PackagePath="\" />
+    <None Include="../../LICENSE" Pack="true" PackagePath="\" Link="LICENSE" />
+    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" Link="THIRD-PARTY-NOTICES.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Db2.Driver/Db2.Driver.csproj" />
+  </ItemGroup>
+</Project>

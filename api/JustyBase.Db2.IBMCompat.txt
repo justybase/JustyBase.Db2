@@ -1,0 +1,68 @@
+type class IBM.Data.Db2.DB2BulkCopy
+  .ctor(IBM.Data.Db2.DB2Connection connection, IBM.Data.Db2.DB2BulkCopyOptions copyOptions)
+  .ctor(JustyBase.Db2.AdoNet.Db2AdoConnection connection, IBM.Data.Db2.DB2BulkCopyOptions copyOptions)
+  System.Threading.Tasks.Task WriteToServerAsync(System.Data.Common.DbDataReader source, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task WriteToServerAsync(System.Data.IDataReader source, System.Threading.CancellationToken cancellationToken)
+  System.Void Close()
+  System.Void Dispose()
+  System.Void WriteToServer(System.Data.Common.DbDataReader source)
+  System.Void WriteToServer(System.Data.DataTable source)
+  System.Void WriteToServer(System.Data.IDataReader source)
+  System.Int32 BulkCopyTimeout { get;set; }
+  System.String DestinationTableName { get;set; }
+  IBM.Data.Db2.DB2ErrorCollection Errors { get; }
+  System.Int32 NotifyAfter { get;set; }
+  System.Int64 RowsCopied { get; }
+  event IBM.Data.Db2.DB2RowsCopiedEventHandler DB2RowsCopied
+type enum IBM.Data.Db2.DB2BulkCopyOptions
+  static IBM.Data.Db2.DB2BulkCopyOptions Default
+  static IBM.Data.Db2.DB2BulkCopyOptions KeepIdentity
+  static IBM.Data.Db2.DB2BulkCopyOptions TableLock
+  static IBM.Data.Db2.DB2BulkCopyOptions Truncate
+type class IBM.Data.Db2.DB2Connection
+  .ctor()
+  .ctor(System.String connectionString)
+  System.Threading.Tasks.ValueTask DisposeAsync()
+  protected System.Void Dispose(System.Boolean disposing)
+  protected System.Void OnInfoMessage(JustyBase.Db2.AdoNet.Db2AdoInfoMessageEventArgs args)
+  protected internal System.Exception TranslateOperationCancellation(System.Exception error)
+  protected internal System.Exception TranslateProviderError(System.Exception error)
+  System.String ConnectionString { get;set; }
+  System.Int32 ConnectionTimeout { get; }
+  event IBM.Data.Db2.DB2InfoMessageEventHandler InfoMessage
+type class IBM.Data.Db2.DB2ConnectionStringBuilder
+  .ctor()
+  .ctor(System.String connectionString)
+  System.Int32 Connect_Timeout { get;set; }
+type class IBM.Data.Db2.DB2Error
+  System.String Message { get; }
+  System.Int32 NativeError { get; }
+  System.Int32 RowNumber { get; }
+  System.String SQLState { get; }
+  System.String Source { get; }
+  System.Int64 SourceRowNumber { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class IBM.Data.Db2.DB2ErrorCollection
+type class IBM.Data.Db2.DB2Exception
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  IBM.Data.Db2.DB2ErrorCollection Errors { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
+type class IBM.Data.Db2.DB2InfoMessageEventArgs
+  .ctor(IBM.Data.Db2.DB2ErrorCollection errors)
+  IBM.Data.Db2.DB2ErrorCollection Errors { get; }
+type delegate IBM.Data.Db2.DB2InfoMessageEventHandler
+  .ctor(System.Object object, System.IntPtr method)
+  System.IAsyncResult BeginInvoke(System.Object sender, IBM.Data.Db2.DB2InfoMessageEventArgs e, System.AsyncCallback callback, System.Object object)
+  System.Void EndInvoke(System.IAsyncResult result)
+  System.Void Invoke(System.Object sender, IBM.Data.Db2.DB2InfoMessageEventArgs e)
+type class IBM.Data.Db2.DB2RowsCopiedEventArgs
+  .ctor(System.Int64 rowsCopied)
+  System.Boolean Abort { get;set; }
+  System.Int64 RowsCopied { get; }
+type delegate IBM.Data.Db2.DB2RowsCopiedEventHandler
+  .ctor(System.Object object, System.IntPtr method)
+  System.IAsyncResult BeginInvoke(System.Object sender, IBM.Data.Db2.DB2RowsCopiedEventArgs e, System.AsyncCallback callback, System.Object object)
+  System.Void EndInvoke(System.IAsyncResult result)
+  System.Void Invoke(System.Object sender, IBM.Data.Db2.DB2RowsCopiedEventArgs e)

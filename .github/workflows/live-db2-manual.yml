@@ -1,0 +1,47 @@
+name: Live Db2 Qualification (C#)
+
+on:
+  workflow_dispatch:
+    inputs:
+      kerberos_repeats:
+        description: Fresh Kerberos E2E repetitions
+        required: false
+        default: '3'
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    name: Full Db2 + Kerberos qualification
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.112
+
+      - name: Run full live qualification
+        env:
+          DB2_IT_REPORT_DIR: ${{ runner.temp }}/db2-live-qualification-results/db2
+          DB2_KRB_REPORT_DIR: ${{ runner.temp }}/db2-live-qualification-results/kerberos
+        run: ./scripts/test-db2-qualification.sh --kerberos-repeats "${{ inputs.kerberos_repeats }}"
+
+      - name: Ensure full Db2 suite executed tests
+        if: success()
+        run: python3 scripts/check-trx-no-skips.py --allow-skips '${{ runner.temp }}/db2-live-qualification-results/db2/'*.trx
+
+      - name: Upload full live qualification results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: db2-live-qualification-results
+          path: ${{ runner.temp }}/db2-live-qualification-results/
+          if-no-files-found: ignore
+          retention-days: 14
