@@ -104,7 +104,7 @@ static DbConnection? GetConnection(string? _)
         Connect_Timeout = 30,
         Pooling = false,
     };
-    var connection = Db2AdoProviderFactory.Instance.CreateConnection();
+    var connection = new DB2Connection();
     connection.ConnectionString = builder.ConnectionString;
     return connection;
 }
