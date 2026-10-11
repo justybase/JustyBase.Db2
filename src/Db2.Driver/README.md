@@ -2,7 +2,7 @@
 
 > Experimental managed .NET 10 driver for **IBM Db2 LUW**. Speaks DRDA/DDM directly over TCP/TLS, with no IBM CLI or ODBC runtime dependency.
 
-> **Alpha prerelease (`0.1.0-alpha.1`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.2`). Not recommended for production use.**
 > APIs and protocol coverage may change between prereleases. Validate against your own Db2 environment and workload before relying on it.
 
 `JustyBase.Db2` is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.

@@ -8,9 +8,9 @@ Read the [driver README](../Db2.Driver/README.md) for complete examples of conne
 
 Remove the IBM package from the application project. Do not reference both packages in one compilation: both define names such as `IBM.Data.Db2.DB2Connection`.
 
-The compatibility package is not currently published to a package registry, so there is no public install command yet. For local validation, build the projects or use the repository package-consumer smoke test. Before migrating an application, confirm that a package build suitable for your environment is available.
+The prerelease packages are published to NuGet.org. Install the compatibility package with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.2`; its `JustyBase.Db2` dependency is installed automatically. Before migrating an application, validate the prerelease against your environment and workload.
 
-`JustyBase.Db2.IBMCompat` depends on `JustyBase.Db2`, which is pulled in automatically. Both packages target `net10.0` and share the prerelease version `0.1.0-alpha.1`. **This package is highly experimental and not recommended for production use.** See the [compatibility package README](README.md) for its status. New applications should use the native `JustyBase.Db2` API instead.
+`JustyBase.Db2.IBMCompat` depends on `JustyBase.Db2`, which is pulled in automatically. Both packages target `net10.0` and share the prerelease version `0.1.0-alpha.2`. **This package is highly experimental and not recommended for production use.** See the [compatibility package README](README.md) for its status. New applications should use the native `JustyBase.Db2` API instead.
 
 Keep `using IBM.Data.Db2;` for the compatibility facade, or use `JustyBase.Db2.AdoNet` and instantiate `Db2AdoConnection` directly. Both use the same native driver implementation.
 
@@ -106,6 +106,8 @@ if (copy.Errors.Count != 0)
 IBM's `KeepIdentity`, `Truncate`, and `DB2BulkCopyColumnMapping` APIs are not implemented. `KeepIdentity` and `Truncate` options fail explicitly. To import columns in a different order, pass an explicit `destinationColumns` list to `Db2AdoImporter.ImportAsync`; each name in the list corresponds to the same ordinal in the source reader. If the target must be cleared, issue an explicit, application-reviewed Db2 statement before starting the copy.
 
 `DB2BulkCopy` is implemented with bounded, parameterized multi-row `INSERT` statements rather than the IBM CLI `LOAD` path. The common progress/error surface is compatible, but do not assume the same throughput, locking internals, identity handling, or advanced load options. Successful rows before a later row error remain inserted and are reflected in `RowsCopied`; the failing row appears in `Errors`. `TableLock` requests an exclusive lock for the operation. Progress-handler exceptions are ignored, as IBM documents; setting `e.Abort` stops the copy after preserving rows reported as copied.
+
+The native implementation defaults to a bounded 1024-row batch (`BatchSize` is configurable). In the default unlocked mode, each completed batch is committed; if a row in the next batch fails, that batch is rolled back and earlier committed batches remain. `TableLock` holds an exclusive lock and a single transaction, preserving successfully copied rows on a row error or progress abort. The default commit boundary is therefore a batch, not an individual row.
 
 For a configurable bounded-memory import with atomic rollback by default, cancellation, explicit commit intervals, and row diagnostics, use `Db2AdoImporter.ImportAsync`. It accepts an existing `IDataReader`; see [the compatibility README bulk-copy example](README.md#bulk-copy) and the `Db2AdoImportOptions` XML docs. For a parameter-set batch without an ADO bulk-copy source reader, the lower-level `Db2Session.ExecuteBatchAsync` API is available; ADO `DbCommand` itself does not expose a batch method.
 

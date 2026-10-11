@@ -8,11 +8,13 @@ type class IBM.Data.Db2.DB2BulkCopy
   System.Void WriteToServer(System.Data.Common.DbDataReader source)
   System.Void WriteToServer(System.Data.DataTable source)
   System.Void WriteToServer(System.Data.IDataReader source)
+  System.Int32 BatchSize { get;set; }
   System.Int32 BulkCopyTimeout { get;set; }
   System.String DestinationTableName { get;set; }
   IBM.Data.Db2.DB2ErrorCollection Errors { get; }
   System.Int32 NotifyAfter { get;set; }
   System.Int64 RowsCopied { get; }
+  static System.Int32 DefaultBatchSize
   event IBM.Data.Db2.DB2RowsCopiedEventHandler DB2RowsCopied
 type enum IBM.Data.Db2.DB2BulkCopyOptions
   static IBM.Data.Db2.DB2BulkCopyOptions Default

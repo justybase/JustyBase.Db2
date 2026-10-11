@@ -135,6 +135,7 @@ public sealed class AdoNetTests
             DestinationTableName = "APP.IMPORT_TARGET",
             BulkCopyTimeout = 42,
             NotifyAfter = 10_000,
+            BatchSize = 256,
         };
         var notifications = new List<long>();
         bulkCopy.DB2RowsCopied += (_, args) => notifications.Add(args.RowsCopied);
@@ -142,8 +143,12 @@ public sealed class AdoNetTests
         Assert.Equal("APP.IMPORT_TARGET", bulkCopy.DestinationTableName);
         Assert.Equal(42, bulkCopy.BulkCopyTimeout);
         Assert.Equal(10_000, bulkCopy.NotifyAfter);
+        Assert.Equal(256, bulkCopy.BatchSize);
         Assert.Empty(bulkCopy.Errors);
         Assert.Throws<ArgumentOutOfRangeException>(() => bulkCopy.NotifyAfter = -1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => bulkCopy.BatchSize = 0);
+        using var defaults = new DB2BulkCopy(connection);
+        Assert.Equal(1024, defaults.BatchSize);
         Assert.Throws<NotSupportedException>(() => new DB2BulkCopy(connection, DB2BulkCopyOptions.KeepIdentity));
         Assert.Empty(notifications);
 

@@ -2,14 +2,14 @@
 
 > Optional compatibility layer for migrating selected `IBM.Data.Db2` APIs to the managed .NET `JustyBase.Db2` driver for IBM Db2 LUW. It is not a complete replacement for the IBM provider.
 
-> **Alpha prerelease (`0.1.0-alpha.1`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.2`). Not recommended for production use.**
 > This package is for migrating selected APIs in existing `IBM.Data.Db2` applications. New applications should use `JustyBase.Db2`.
 
 `JustyBase.Db2.IBMCompat` is an optional package in this project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.
 
 ## Package status
 
-This package is not published to NuGet.org or another package registry. CI builds and validates its package as a local artifact. Public installation instructions will be added if publication is enabled.
+This prerelease is published to NuGet.org. Install with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.2`; the native driver dependency is installed automatically.
 
 This package depends on `JustyBase.Db2`, which is installed automatically. It contains only the `IBM.Data.Db2` facade; all connection, protocol and command logic lives in the core package.
 
@@ -46,13 +46,15 @@ Parameters bind positionally to `?` markers, in collection order. `DB2Command` a
 
 ## Bulk copy
 
-`DB2BulkCopy` offers the IBM-shaped progress and error surface, implemented with bounded, parameterized multi-row `INSERT` statements:
+`DB2BulkCopy` offers the IBM-shaped progress and error surface, implemented with bounded, parameterized multi-row `INSERT` statements. By default, `BatchSize` is 1024 and completed batches are committed. A failed batch is rolled back while preceding committed batches remain. `TableLock` requests an exclusive table lock and uses one transaction for the import:
 
 ```csharp
 using var copy = new DB2BulkCopy(connection, DB2BulkCopyOptions.Default)
 {
     DestinationTableName = "APP.CUSTOMERS_STAGE",
     NotifyAfter = 10_000,
+    // Optional; defaults to 1024 rows and is further bounded by Db2 limits.
+    BatchSize = 1024,
 };
 copy.DB2RowsCopied += (_, e) => Console.WriteLine($"Copied {e.RowsCopied:N0}");
 copy.WriteToServer(sourceReader);

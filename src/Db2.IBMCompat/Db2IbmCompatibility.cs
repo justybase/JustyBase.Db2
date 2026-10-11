@@ -205,19 +205,26 @@ public enum DB2BulkCopyOptions
 
 /// <summary>
 /// IBM-shaped bulk-copy API backed by bounded, parameterized multi-row INSERTs.
-/// Without <see cref="DB2BulkCopyOptions.TableLock"/>, successful rows are committed individually,
-/// so a later row error or abort leaves earlier rows available, as with IBM's provider. With
-/// TableLock, an exclusive SQL table lock is held for the copy transaction; already successful
-/// rows are committed when a row error or progress abort ends the operation.
+/// By default rows are inserted in bounded batches and each successful batch is committed.
+/// A failure rolls back the batch in progress while preserving earlier committed batches. With
+/// <see cref="DB2BulkCopyOptions.TableLock"/>, an exclusive SQL table lock is held for the copy
+/// transaction; successful rows are committed when a row error or progress abort ends the operation.
 /// </summary>
 public sealed class DB2BulkCopy : IDisposable
 {
+    /// <summary>
+    /// Default number of source rows per multi-row INSERT batch. The importer reduces this as
+    /// necessary to respect Db2's parameter, SQL-text, and bounded-memory limits.
+    /// </summary>
+    public const int DefaultBatchSize = 1024;
+
     private readonly Db2AdoConnection _connection;
     private readonly DB2BulkCopyOptions _options;
     private DB2ErrorCollection _errors = DB2ErrorCollection.EmptyCollection;
     private string _destinationTableName = "";
     private int _bulkCopyTimeout = 3_600;
     private int _notifyAfter;
+    private int _batchSize = DefaultBatchSize;
     private long _rowsCopied;
     private bool _isWriting;
     private bool _isClosed;
@@ -253,6 +260,17 @@ public sealed class DB2BulkCopy : IDisposable
     {
         get => _notifyAfter;
         set => _notifyAfter = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+    }
+
+    /// <summary>
+    /// Maximum number of rows per multi-row INSERT. For the default (unlocked) mode,
+    /// successful batches are committed; TableLock mode commits the whole import or
+    /// preserves completed rows on a row error/abort. Defaults to <see cref="DefaultBatchSize"/>.
+    /// </summary>
+    public int BatchSize
+    {
+        get => _batchSize;
+        set => _batchSize = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value));
     }
 
     public DB2ErrorCollection Errors => _errors;
@@ -303,8 +321,13 @@ public sealed class DB2BulkCopy : IDisposable
                     _destinationTableName,
                     options: new Db2AdoImportOptions
                     {
-                        BatchSize = (_options & DB2BulkCopyOptions.TableLock) != 0 ? 128 : 1,
-                        CommitEveryRows = (_options & DB2BulkCopyOptions.TableLock) != 0 ? 0 : 1,
+                        BatchSize = BatchSize,
+                        // Without an explicit row-notification boundary, commit after each
+                        // batch. When NotifyAfter is set, align commits to that boundary so
+                        // an Abort event never reports rows that are then silently rolled back.
+                        CommitEveryRows = (_options & DB2BulkCopyOptions.TableLock) != 0
+                            ? 0
+                            : NotifyAfter > 0 ? NotifyAfter : BatchSize,
                         CommandTimeout = 0,
                         NotifyAfterRows = NotifyAfter > 0 ? 1 : int.MaxValue,
                         RowsUntilProgressBoundary = rowsInserted =>

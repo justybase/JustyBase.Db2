@@ -2,10 +2,10 @@
   <!--
     Shared NuGet packaging settings for the shipped packages (JustyBase.Db2 and JustyBase.Db2.IBMCompat).
     Imported explicitly by each packable project; test projects do not import it.
-    Keep this version prerelease until a separate release decision is made.
+    Keep this version prerelease until a separate stable-release decision is made.
   -->
   <PropertyGroup>
-    <Version>0.1.0-alpha.1</Version>
+    <Version>0.1.0-alpha.2</Version>
     <Authors>Krzysztof Dusko</Authors>
     <Copyright>Copyright (c) 2026 Krzysztof Dusko</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

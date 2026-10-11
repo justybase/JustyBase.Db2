@@ -581,7 +581,7 @@ public sealed class AdoNetLiveDb2Tests
 
     [Db2LiveFact]
     [Trait("Category", "Live")]
-    public async Task IbmStyleBulkCopyCollectsDuplicateRowErrorsAndKeepsEarlierCommittedRows()
+    public async Task IbmStyleBulkCopyCollectsDuplicateRowErrorsAndKeepsEarlierCommittedBatches()
     {
         var table = $"CS_BCP_{Guid.NewGuid():N}"[..28].ToUpperInvariant();
         await using var connection = new DB2Connection(Dsn);
@@ -604,6 +604,7 @@ public sealed class AdoNetLiveDb2Tests
             {
                 DestinationTableName = table,
                 BulkCopyTimeout = 60,
+                BatchSize = 2,
             })
             {
                 using var reader = source.CreateDataReader();

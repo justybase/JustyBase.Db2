@@ -60,7 +60,7 @@ The repository provides:
 
 ## Status
 
-- **Experimental / alpha** (`0.1.0-alpha.1`). Packages are not published to any package registry.
+- **Experimental / alpha** (`0.1.0-alpha.2`). NuGet packages are prereleases; validate against your own Db2 environment and workload before production use.
 - **APIs may change** before 1.0, including the native API and result types.
 - **Not yet recommended for production use.** Validate against your own Db2 environment and workload first.
 
@@ -76,7 +76,14 @@ The maintained live qualification profile is **Linux x64** with **Db2 LUW 12.1.5
 
 ## Packages and local validation
 
-The `JustyBase.Db2` and `JustyBase.Db2.IBMCompat` packages are not published to NuGet.org or another registry. `dotnet pack` produces local validation artifacts; public installation commands will be documented if publication is enabled in a future release.
+Install the prerelease packages from NuGet.org with an explicit version:
+
+```bash
+dotnet add package JustyBase.Db2 --version 0.1.0-alpha.2
+dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.2
+```
+
+The compatibility package depends on `JustyBase.Db2`; install it directly only when migrating selected `IBM.Data.Db2` APIs.
 
 For development against the source projects:
 
