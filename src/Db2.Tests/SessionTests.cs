@@ -60,9 +60,9 @@ public sealed partial class SessionTests
         });
 
         var config = TestConfig(port);
-        var error = await Assert.ThrowsAsync<NotSupportedException>(() => Db2Session.ConnectAsync(config));
+        var error = await Assert.ThrowsAsync<Db2UnsupportedFeatureException>(() => Db2Session.ConnectAsync(config));
 
-        Assert.Contains("selected security mechanism 4", error.Message, StringComparison.Ordinal);
+        Assert.Contains("rejected security mechanism 3; the server accepts 4", error.Message, StringComparison.Ordinal);
         await serverTask;
     }
 

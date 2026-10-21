@@ -1,11 +1,13 @@
 using System.Numerics;
 using System.Security.Cryptography;
+using JustyBase.Db2.Converters;
 
 namespace JustyBase.Db2.Security;
 
 /// <summary>
 /// DRDA EUSRIDPWD (security mechanism 9) helpers: 256-bit Diffie-Hellman key
-/// agreement and DES-CBC/PKCS5 password and userid encryption. The parameter
+/// agreement and DES-CBC/PKCS5 password and userid encryption. USRENCPWD
+/// (security mechanism 7) reuses the same key agreement for the password only. The parameter
 /// values and derivation match the published DRDA values used by Apache
 /// Derby's EncryptionManager/DecryptionManager.
 /// </summary>
@@ -77,11 +79,32 @@ internal static class Secmec9
         var peer = NormalizePeer(serverPublicKey);
         if (peer.Length < 20) throw new ArgumentException("DB2 EUSRIDPWD server security token is too short.", nameof(serverPublicKey));
         var sessionKey = CalculateSessionKey(peer, privateKey);
+        return DesCbcEncrypt(sessionKey.AsSpan(12, 8), peer.AsSpan(12, 8), plaintext);
+    }
+
+    /// <summary>
+    /// Encrypts the password field for DRDA USRENCPWD (SECMEC 7) with DES-CBC/PKCS5. Its DES key comes from the
+    /// same DH shared secret as SECMEC 9, but its IV is the CP500 user ID padded with zero bytes or truncated to
+    /// one DES block. SECMEC 9 instead encrypts both identity fields using an IV from the server public key; the
+    /// two mechanisms are not wire-compatible.
+    /// </summary>
+    public static byte[] EncryptUsrencpwd(ReadOnlySpan<byte> plaintext, string user, ReadOnlySpan<byte> serverPublicKey, BigInteger privateKey)
+    {
+        var userId = Ebcdic.EncodeCp500(user);
+        if (userId.Length == 0) throw new ArgumentException("DB2 USRENCPWD requires a non-empty user ID.", nameof(user));
+        Span<byte> iv = stackalloc byte[8];
+        userId.AsSpan(0, Math.Min(userId.Length, 8)).CopyTo(iv);
+        var sessionKey = CalculateSessionKey(serverPublicKey, privateKey);
+        return DesCbcEncrypt(sessionKey.AsSpan(12, 8), iv, plaintext);
+    }
+
+    private static byte[] DesCbcEncrypt(ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, ReadOnlySpan<byte> plaintext)
+    {
         using var des = DES.Create();
         des.Mode = CipherMode.CBC;
         des.Padding = PaddingMode.PKCS7;
-        des.Key = sessionKey.AsSpan(12, 8).ToArray();
-        des.IV = peer.AsSpan(12, 8).ToArray();
+        des.Key = key.ToArray();
+        des.IV = iv.ToArray();
         using var encryptor = des.CreateEncryptor();
         return encryptor.TransformFinalBlock(plaintext.ToArray(), 0, plaintext.Length);
     }

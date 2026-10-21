@@ -190,7 +190,7 @@ public sealed partial class SessionTests
         });
 
         var provider = new ScriptedKerberosProvider();
-        await Assert.ThrowsAsync<NotSupportedException>(() => Db2Session.ConnectAsync(
+        await Assert.ThrowsAsync<Db2UnsupportedFeatureException>(() => Db2Session.ConnectAsync(
             KerberosTestConfig(port, c => { c.User = "db2inst1"; c.Password = "secret"; }), () => provider, CancellationToken.None));
         await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Empty(framesAfterNegotiation);

@@ -2,14 +2,14 @@
 
 > Optional compatibility layer for migrating selected `IBM.Data.Db2` APIs to the managed .NET `JustyBase.Db2` driver for IBM Db2 LUW. It is not a complete replacement for the IBM provider.
 
-> **Alpha prerelease (`0.1.0-alpha.2`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.3`). Not recommended for production use.**
 > This package is for migrating selected APIs in existing `IBM.Data.Db2` applications. New applications should use `JustyBase.Db2`.
 
 `JustyBase.Db2.IBMCompat` is an optional package in this project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.
 
 ## Package status
 
-This prerelease is published to NuGet.org. Install with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.2`; the native driver dependency is installed automatically.
+This prerelease is published to NuGet.org. Install with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.3`; the native driver dependency is installed automatically.
 
 This package depends on `JustyBase.Db2`, which is installed automatically. It contains only the `IBM.Data.Db2` facade; all connection, protocol and command logic lives in the core package.
 

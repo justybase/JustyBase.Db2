@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-alpha.3 - 2026-10-21
+
+- DRDA `USRENCPWD` (SECMEC 7) authentication: `security_mechanism=7` (`usrencpwd`, `encrypted_password_security`, `secmec7`) sends a clear user ID and the DES-CBC-encrypted password in `SECCHK/SECTKN`, with the client DH key in `ACCSEC` (`ENCALG=1`) and the IV taken from the CP500 user ID. AES (`ENCALG=2`) and other algorithms fail closed before credentials are sent. Opt-in live test `Secmec7LiveTests` (`DB2_SECMEC7_TEST_DSN`, category `Secmec7Integration`).
+- A connection without a configured security mechanism now follows a server that refuses the plaintext default: when `ACCSECRD` lists `9` or `7` (Db2 `AUTHENTICATION=SERVER_ENCRYPT`), the driver sends a second `ACCSEC` on the same connection with `9`, else `7`, before any credentials are sent. An explicitly configured mechanism, including `3`, is never changed, and a rejection of the retried mechanism ends the handshake.
+- `ACCSECRD`'s SECMEC and ENCALG parameters are decoded as lists. When the server rejects the requested mechanism the `Db2UnsupportedFeatureException` (previously a plain `NotSupportedException`) names every mechanism the server accepts plus `SECCHKCD` (`DB2 rejected security mechanism 3 (SECCHKCD=1); the server accepts 7, 9, 10`). A non-zero `SECCHKCD` for the requested mechanism now fails with `Db2AuthenticationException` before `SECCHK`.
+- The `SwitchUserAsync` SECCHK fallback checks the mechanism actually negotiated, so it stays refused after an automatic switch to an encrypting mechanism.
+- Verified live against Db2 LUW 11.5.8.0 with `AUTHENTICATION=SERVER_ENCRYPT` (SECMEC 7, SECMEC 9, unset mechanism, explicit SECMEC 3 rejection, wrong password).
+
 ## 0.1.0-alpha.2 - 2026-10-11
 
 - `DB2BulkCopy` now batches up to 1024 rows by default and commits completed batches instead of committing each row; batch size is configurable and respects Db2 limits.

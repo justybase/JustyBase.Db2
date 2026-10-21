@@ -228,6 +228,8 @@ public sealed partial class Db2Session : IAsyncDisposable
     private int _interruptUsed;
     private readonly string _database;
     private readonly ushort _securityMechanism;
+    /// <summary>Mechanism the server accepted in ACCSECRD; 0 until the handshake completes.</summary>
+    private ushort _negotiatedSecurityMechanism;
     private readonly KerberosCredentialPlan? _kerberosPlan;
     private readonly Func<IKerberosTokenProvider>? _kerberosProviderFactory;
     private readonly uint _blockSize;
@@ -359,8 +361,8 @@ public sealed partial class Db2Session : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(config.Database)) throw new Db2ConfigurationException("DB2 database name is required.");
         // Kerberos establishes the identity from the ticket, so a user name is optional there.
         if (string.IsNullOrWhiteSpace(config.User) && config.SecurityMechanism != 11) throw new Db2ConfigurationException("DB2 user name is required.");
-        if (config.SecurityMechanism is not (0 or 3 or 9 or 11))
-            throw new Db2ConfigurationException($"Unsupported DB2 authentication mechanism {config.SecurityMechanism}. Supported mechanisms are 3 (USRIDPWD), 9 (EUSRIDPWD), and 11 (Kerberos/GSSAPI).");
+        if (config.SecurityMechanism is not (0 or 3 or 7 or 9 or 11))
+            throw new Db2ConfigurationException($"Unsupported DB2 authentication mechanism {config.SecurityMechanism}. Supported mechanisms are 3 (USRIDPWD), 7 (USRENCPWD), 9 (EUSRIDPWD), and 11 (Kerberos/GSSAPI).");
         // Resolved before any socket is opened so configuration mistakes never reach the wire.
         var kerberosPlan = config.SecurityMechanism == 11 && kerberosProviderFactory is null ? KerberosCredentialPlan.Resolve(config) : null;
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -1812,25 +1814,30 @@ public sealed partial class Db2Session : IAsyncDisposable
         }
     }
 
-    private async Task HandshakeCoreAsync(Action<IKerberosTokenProvider> trackKerberos, CancellationToken cancellationToken)
+    private readonly record struct SecurityExchange(
+        ushort[]? AcceptedAfterRejection, byte RejectionCheckCode, byte[] SecurityToken, ushort[]? EncryptionAlgorithms, BigInteger? ClientPrivateKey);
+
+    /// <summary>
+    /// Sends one ACCSEC and reads ACCSECRD. ACCSECRD echoes the requested SECMEC on success. On rejection it
+    /// carries the list of mechanisms the server accepts (one SECMEC parameter holding several 2-byte values),
+    /// SECCHKCD and, for encrypting servers, the ENCALG list -- but no SECTKN, so the client cannot switch
+    /// mechanisms in SECCHK; it has to send a new ACCSEC.
+    /// </summary>
+    private async Task<SecurityExchange> AccessSecurityAsync(ushort mechanism, bool retry, CancellationToken cancellationToken)
     {
-        _correlationId = 1;
-        var requestedMechanism = _securityMechanism;
         BigInteger? clientPrivateKey = null;
         byte[] accsecToken = [];
-        IKerberosTokenProvider? kerberos = null;
-        if (requestedMechanism == 9)
+        if (mechanism is 7 or 9)
         {
             clientPrivateKey = Secmec9.GeneratePrivateKey();
             accsecToken = Secmec9.CalculatePublicKey(clientPrivateKey.Value);
         }
-        var clientHost = Environment.MachineName.Length == 0 ? "JustyBase.Db2-client" : Environment.MachineName;
-        await SendAsync(DdmCodec.PackExcsat("JustyBase.Db2", clientHost, "SQL12010", "JustyBase.Db2"), false, false, cancellationToken).ConfigureAwait(false);
-        await SendAsync(DdmCodec.PackAccsec(_database, _securityMechanism, accsecToken), false, true, cancellationToken).ConfigureAwait(false);
-        var negotiation = await ReadReplyChainAsync(cancellationToken).ConfigureAwait(false);
-        var negotiated = _securityMechanism;
+        await SendAsync(DdmCodec.PackAccsec(_database, mechanism, accsecToken, mechanism == 7 ? (ushort)1 : null), false, true, cancellationToken).ConfigureAwait(false);
+        ushort[] serverMechanisms = [mechanism];
+        byte checkCode = 0;
         byte[] securityToken = [];
-        foreach (var reply in negotiation)
+        ushort[]? encryptionAlgorithms = null;
+        foreach (var reply in await ReadReplyChainAsync(cancellationToken).ConfigureAwait(false))
         {
             var codePoint = (CodePoint)reply.CodePoint;
             if (codePoint == CodePoint.RDBNFNRM) throw new Db2DatabaseNotFoundException();
@@ -1850,12 +1857,61 @@ public sealed partial class Db2Session : IAsyncDisposable
             }
             if (codePoint != CodePoint.ACCSECRD) continue;
             var values = DdmCodec.ParseParameters(reply.Payload);
-            if (values.TryGetValue((ushort)CodePoint.SECMEC, out var mechanism) && mechanism.Length >= 2)
-                negotiated = BinaryPrimitives.ReadUInt16BigEndian(mechanism);
+            if (values.TryGetValue((ushort)CodePoint.SECMEC, out var mechanisms)) serverMechanisms = ParseUInt16List(mechanisms, "security mechanism");
+            if (values.TryGetValue((ushort)CodePoint.SECCHKCD, out var code) && code.Length > 0) checkCode = code[0];
             if (values.TryGetValue((ushort)CodePoint.SECTKN, out var token)) securityToken = token;
+            if (values.TryGetValue((ushort)CodePoint.ENCALG, out var algorithms)) encryptionAlgorithms = ParseUInt16List(algorithms, "encryption algorithm");
         }
-        if (negotiated != _securityMechanism)
-            throw new NotSupportedException($"DB2 selected security mechanism {negotiated}, but this connection requested {_securityMechanism}; mechanism changes are not allowed.");
+        if (serverMechanisms is not [var accepted] || accepted != mechanism)
+        {
+            // A server that rejects the mechanism we switched to is not trusted for another round.
+            if (retry)
+                throw new Db2UnsupportedFeatureException($"DB2 listed security mechanism {mechanism} as accepted but then rejected it (server accepts {string.Join(", ", serverMechanisms)}).");
+            return new(serverMechanisms, checkCode, securityToken, encryptionAlgorithms, clientPrivateKey);
+        }
+        if (checkCode != 0) throw new Db2AuthenticationException(checkCode);
+        return new(null, 0, securityToken, encryptionAlgorithms, clientPrivateKey);
+    }
+
+    /// <summary>Decodes a DDM parameter holding one or more big-endian 2-byte values (SECMEC, ENCALG lists).</summary>
+    private static ushort[] ParseUInt16List(byte[] value, string name)
+    {
+        if (value.Length == 0 || value.Length % 2 != 0) throw new InvalidDataException($"DB2 returned a malformed {name} list in ACCSECRD.");
+        var result = new ushort[value.Length / 2];
+        for (var index = 0; index < result.Length; index++) result[index] = BinaryPrimitives.ReadUInt16BigEndian(value.AsSpan(index * 2));
+        return result;
+    }
+
+    private async Task HandshakeCoreAsync(Action<IKerberosTokenProvider> trackKerberos, CancellationToken cancellationToken)
+    {
+        _correlationId = 1;
+        var mechanism = _securityMechanism;
+        IKerberosTokenProvider? kerberos = null;
+        var clientHost = Environment.MachineName.Length == 0 ? "JustyBase.Db2-client" : Environment.MachineName;
+        await SendAsync(DdmCodec.PackExcsat("JustyBase.Db2", clientHost, "SQL12010", "JustyBase.Db2"), false, false, cancellationToken).ConfigureAwait(false);
+        var exchange = await AccessSecurityAsync(mechanism, retry: false, cancellationToken).ConfigureAwait(false);
+        if (exchange.AcceptedAfterRejection is { } offered && _config.SecurityMechanism == 0)
+        {
+            // No mechanism was configured: like IBM CLI, follow a server that refuses the plaintext default, but
+            // only to an encrypting mechanism it listed (9, else 7). No credentials have been sent yet, and Db2
+            // accepts a new ACCSEC on the same connection after rejecting one.
+            ushort upgrade = offered.Contains((ushort)9) ? (ushort)9 : offered.Contains((ushort)7) ? (ushort)7 : (ushort)0;
+            if (upgrade != 0)
+            {
+                mechanism = upgrade;
+                _correlationId = 1;
+                exchange = await AccessSecurityAsync(mechanism, retry: true, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        if (exchange.AcceptedAfterRejection is { } serverMechanisms)
+        {
+            var checkCode = exchange.RejectionCheckCode != 0 ? $" (SECCHKCD={exchange.RejectionCheckCode})" : "";
+            throw new Db2UnsupportedFeatureException($"DB2 rejected security mechanism {mechanism}{checkCode}; the server accepts {string.Join(", ", serverMechanisms)}. Set security_mechanism to one of them (7 or 9 for AUTHENTICATION=SERVER_ENCRYPT).");
+        }
+        _negotiatedSecurityMechanism = mechanism;
+        var negotiated = mechanism;
+        var securityToken = exchange.SecurityToken;
+        var clientPrivateKey = exchange.ClientPrivateKey;
 
         if (negotiated == 3)
         {
@@ -1868,6 +1924,16 @@ public sealed partial class Db2Session : IAsyncDisposable
             var encryptedUserid = Secmec9.Encrypt(Ebcdic.EncodeCp500(_config.User), securityToken, clientPrivateKey.Value);
             var encryptedPassword = Secmec9.Encrypt(Ebcdic.EncodeCp500(_config.Password), securityToken, clientPrivateKey.Value);
             await SendAsync(DdmCodec.PackSecchkEusridpwd(_database, encryptedUserid, encryptedPassword), false, false, cancellationToken).ConfigureAwait(false);
+        }
+        else if (negotiated == 7)
+        {
+            if (clientPrivateKey is null) throw new Db2UnsupportedFeatureException("DB2 USRENCPWD requires a client Diffie-Hellman key pair.");
+            // ENCALG is absent on older servers (DES implied); Db2 LUW echoes ENCALG=1.
+            if (exchange.EncryptionAlgorithms is { } algorithms && algorithms is not [1])
+                throw new Db2UnsupportedFeatureException($"DB2 selected USRENCPWD encryption algorithm ENCALG={string.Join(",", algorithms)}; this driver supports DES (ENCALG=1) only.");
+            if (securityToken.Length < 20) throw new InvalidDataException("DB2 USRENCPWD key exchange did not return a usable server security token.");
+            var encryptedPassword = Secmec9.EncryptUsrencpwd(Ebcdic.EncodeCp500(_config.Password), _config.User, securityToken, clientPrivateKey.Value);
+            await SendAsync(DdmCodec.PackSecchkUsrencpwd(_database, _config.User, encryptedPassword), false, false, cancellationToken).ConfigureAwait(false);
         }
         else if (negotiated == 11)
         {
@@ -1883,7 +1949,7 @@ public sealed partial class Db2Session : IAsyncDisposable
         }
         else
         {
-            throw new Db2UnsupportedFeatureException($"DB2 negotiated security mechanism {negotiated}; mechanisms 3, 9, and 11 are currently implemented.");
+            throw new Db2UnsupportedFeatureException($"DB2 negotiated security mechanism {negotiated}; mechanisms 3, 7, 9, and 11 are currently implemented.");
         }
         await SendAsync(DdmCodec.PackAccrdb("SQL12010", _database, DdmStringEncoding.Cp500), false, true, cancellationToken).ConfigureAwait(false);
         var authentication = await ReadReplyChainAsync(cancellationToken).ConfigureAwait(false);
@@ -2010,8 +2076,8 @@ public sealed partial class Db2Session : IAsyncDisposable
         if (!allowFallback) throw lastError ?? new InvalidOperationException("DB2 session user switch failed.");
         // DRDA re-authentication fallback, mirroring go-db2: a standalone SECCHK
         // revalidates the new identity on the existing connection context.
-        if (_securityMechanism != 3)
-            throw new Db2UnsupportedFeatureException($"DB2 user switch fallback requires security mechanism 3; current mechanism {_securityMechanism} is not supported for mid-session re-authentication.");
+        if (_negotiatedSecurityMechanism != 3)
+            throw new Db2UnsupportedFeatureException($"DB2 user switch fallback requires security mechanism 3; current mechanism {_negotiatedSecurityMechanism} is not supported for mid-session re-authentication.");
         _correlationId = 1;
         var passwordBytes = password is null ? Array.Empty<byte>() : Encoding.UTF8.GetBytes(password);
         await SendAsync(DdmCodec.PackSecchk(3, [], _database, target, passwordBytes, false, DdmStringEncoding.Cp500), false, true, cancellationToken).ConfigureAwait(false);

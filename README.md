@@ -41,7 +41,8 @@ The repository provides:
 | --- | :---: | --- |
 | TCP connections | ✅ | Managed .NET sockets |
 | TLS 1.2 / 1.3 | ✅ | Certificate/hostname validation |
-| Password authentication | ✅ | DRDA server authentication |
+| Password authentication | ✅ | DRDA server authentication (SECMEC 3) |
+| SECMEC 7 | ✅ | Clear user ID and DES-encrypted password (`USRENCPWD`); verified on Db2 11.5.8; AES selection fails closed |
 | SECMEC 9 | ✅ | Encrypted user/password exchange |
 | Kerberos / GSSAPI (SECMEC 11) | 🧪 | `krb5_keytab` / `krb5_ccache` on Linux x86_64; see [docs/KERBEROS.md](docs/KERBEROS.md) |
 | Native async session API | ✅ | `Db2Session` |
@@ -58,9 +59,11 @@ The repository provides:
 | Bulk/import path | ✅ | Bounded prepared INSERT implementation |
 | IBM CLI dependency | ❌ | Not required at runtime |
 
+Use `security_mechanism=7` (also `secmec=7`, `usrencpwd` or `encrypted_password_security`) to request DRDA `USRENCPWD` against a server with `AUTHENTICATION=SERVER_ENCRYPT`; `Authentication=SERVER_ENCRYPT` continues to request mechanism 9. When `security_mechanism` is not set, the driver requests mechanism 3 and, if the server refuses it and lists an encrypting mechanism, retries the key exchange with 9 (or 7) on the same connection, as IBM CLI does; no credentials are sent before that. An explicitly configured mechanism is never changed: if the server rejects it, the connection fails with the list of mechanisms the server accepts. Mechanism 7 uses DES (`ENCALG=1`); a server selecting AES (`ENCALG=2`) is rejected before any credentials are sent. DRDA password encryption uses an unauthenticated Diffie–Hellman exchange, so use TLS when the network is not trusted.
+
 ## Status
 
-- **Experimental / alpha** (`0.1.0-alpha.2`). NuGet packages are prereleases; validate against your own Db2 environment and workload before production use.
+- **Experimental / alpha** (`0.1.0-alpha.3`). NuGet packages are prereleases; validate against your own Db2 environment and workload before production use.
 - **APIs may change** before 1.0, including the native API and result types.
 - **Not yet recommended for production use.** Validate against your own Db2 environment and workload first.
 
@@ -79,8 +82,8 @@ The maintained live qualification profile is **Linux x64** with **Db2 LUW 12.1.5
 Install the prerelease packages from NuGet.org with an explicit version:
 
 ```bash
-dotnet add package JustyBase.Db2 --version 0.1.0-alpha.2
-dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.2
+dotnet add package JustyBase.Db2 --version 0.1.0-alpha.3
+dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.3
 ```
 
 The compatibility package depends on `JustyBase.Db2`; install it directly only when migrating selected `IBM.Data.Db2` APIs.
@@ -251,7 +254,7 @@ Authentication errors do not echo configured passwords.
 
 ## Testing
 
-All tests live in `src/Db2.Tests/Db2.Tests.csproj` (xUnit). Categories: offline (no category filter needed), `Live`, `Db2Integration` (live smoke subset), `Secmec9Integration`, `KerberosIntegration`.
+All tests live in `src/Db2.Tests/Db2.Tests.csproj` (xUnit). Categories: offline (no category filter needed), `Live`, `Db2Integration` (live smoke subset), `Secmec9Integration`, `Secmec7Integration`, `KerberosIntegration`.
 
 ```bash
 # 1. Offline unit + protocol tests (fast, no Docker / Db2 needed)
@@ -260,7 +263,7 @@ dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo
 
 # 1b. Same offline scope as CI (explicit filter, no live/Kerberos tests)
 dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo -v q \
-  --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
+  --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration&Category!=Secmec7Integration'
 
 # 2. Live Db2 smoke suite (starts throwaway Db2 12.1.5 container, removes it afterwards)
 ./scripts/test-db2-integration.sh           # smoke suite (Category=Db2Integration): connect, DML/types/NULLs, parameters, transactions, errors

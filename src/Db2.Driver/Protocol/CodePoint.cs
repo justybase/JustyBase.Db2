@@ -13,6 +13,7 @@ internal enum CodePoint : ushort
     SECMGR = 0x1440,
     SECMGRNM = 0x1196,
     SECTKN = 0x11DC,
+    ENCALG = 0x1909,
     USRID = 0x11A0,
     PASSWORD = 0x11A1,
     NEWPASSWORD = 0x11DE,

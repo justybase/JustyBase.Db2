@@ -32,7 +32,7 @@ jobs:
       - name: Offline unit and protocol tests
         run: >-
           dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo -v q
-          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration'
+          --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration&Category!=Secmec7Integration'
           --logger 'trx;LogFileName=offline.trx'
           --results-directory '${{ runner.temp }}/offline-test-results'
 

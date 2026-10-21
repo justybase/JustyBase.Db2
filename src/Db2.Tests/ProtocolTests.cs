@@ -444,6 +444,20 @@ public sealed class ProtocolTests
         Assert.Equal("TESTDB", Ebcdic.DecodeCp500(accsec[(ushort)CodePoint.RDBNAM]));
         Assert.Equal([1, 2], accsec[(ushort)CodePoint.SECTKN]);
 
+        var usrencpwdAccsec = DdmCodec.ParseParameters(DdmCodec.PackAccsec("TESTDB", 7, [3, 4], 1).AsSpan(4));
+        Assert.Equal((ushort)7, BinaryPrimitives.ReadUInt16BigEndian(usrencpwdAccsec[(ushort)CodePoint.SECMEC]));
+        Assert.Equal((ushort)1, BinaryPrimitives.ReadUInt16BigEndian(usrencpwdAccsec[(ushort)CodePoint.ENCALG]));
+        Assert.DoesNotContain((ushort)CodePoint.ENCALG, accsec.Keys);
+
+        byte[] ciphertext = [0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80];
+        var usrencpwd = DdmCodec.ParseParameters(DdmCodec.PackSecchkUsrencpwd("TESTDB", "db2inst1", ciphertext).AsSpan(4));
+        Assert.Equal((ushort)7, BinaryPrimitives.ReadUInt16BigEndian(usrencpwd[(ushort)CodePoint.SECMEC]));
+        Assert.Equal("db2inst1", Ebcdic.DecodeCp500(usrencpwd[(ushort)CodePoint.USRID]));
+        // Db2 LUW requires the encrypted password in SECTKN; PASSWORD is rejected (SECCHKCD=16).
+        Assert.Equal(ciphertext, usrencpwd[(ushort)CodePoint.SECTKN]);
+        Assert.DoesNotContain((ushort)CodePoint.PASSWORD, usrencpwd.Keys);
+        Assert.DoesNotContain((ushort)CodePoint.ENCALG, usrencpwd.Keys);
+
         var userOnly = DdmCodec.ParseParameters(DdmCodec.PackSecchk(
             4, [], "TESTDB", "db2inst1", Encoding.UTF8.GetBytes("must-not-be-sent"), false, DdmStringEncoding.Cp500).AsSpan(4));
         Assert.Equal((ushort)4, BinaryPrimitives.ReadUInt16BigEndian(userOnly[(ushort)CodePoint.SECMEC]));

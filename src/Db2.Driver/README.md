@@ -2,7 +2,7 @@
 
 > Experimental managed .NET 10 driver for **IBM Db2 LUW**. Speaks DRDA/DDM directly over TCP/TLS, with no IBM CLI or ODBC runtime dependency.
 
-> **Alpha prerelease (`0.1.0-alpha.2`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.3`). Not recommended for production use.**
 > APIs and protocol coverage may change between prereleases. Validate against your own Db2 environment and workload before relying on it.
 
 `JustyBase.Db2` is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.
@@ -28,7 +28,7 @@ Maintainer qualification currently covers **Linux x64** with **Db2 LUW 12.1.5** 
 - Positional parameters, batch execution and prepared statements.
 - Stored procedures with OUT/INOUT parameters and dynamic result sets.
 - Transactions with explicit isolation levels.
-- Password (SECMEC 3), encrypted password (SECMEC 9) and Kerberos (SECMEC 11, Linux x86_64) authentication.
+- Password (SECMEC 3), encrypted password (SECMEC 7 `USRENCPWD`, SECMEC 9 `EUSRIDPWD`; an unset mechanism follows `AUTHENTICATION=SERVER_ENCRYPT`) and Kerberos (SECMEC 11, Linux x86_64) authentication.
 - TLS 1.2/1.3 with certificate and hostname validation, and mutual TLS.
 - Query cancellation and command timeouts through Db2's SQL interrupt.
 - Row streaming, progressive BLOB/CLOB/DBCLOB/XML streams, and bounded materialization.

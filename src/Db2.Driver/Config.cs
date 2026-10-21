@@ -210,6 +210,7 @@ public sealed class Db2Config
         mechanism = value.Trim().ToLowerInvariant() switch
         {
             "server" or "usridpwd" or "plaintext" or "secmec3" or "3" => 3,
+            "usrencpwd" or "encrypted_password_security" or "secmec7" or "7" => 7,
             "server_encrypt" or "eusridpwd" or "dh_encrypted_password" or "secmec9" or "9" => 9,
             "kerberos" or "gssapi" or "gssplugin" or "secmec11" or "11" => 11,
             "0" => 0,
@@ -217,11 +218,11 @@ public sealed class Db2Config
         };
         if (mechanism != ushort.MaxValue) return true;
         if (!ushort.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out mechanism)) return false;
-        return mechanism is 0 or 3 or 9 or 11;
+        return mechanism is 0 or 3 or 7 or 9 or 11;
     }
 
     private static Db2ConfigurationException UnsupportedAuthentication(string value) =>
-        new($"Unsupported DB2 authentication mode '{value}'. Supported modes are Authentication=SERVER (3), Authentication=SERVER_ENCRYPT / security_mechanism=9 (EUSRIDPWD), and security_mechanism=11 (Kerberos/GSSAPI with krb5_ccache, krb5_keytab or gssapi_token_file).");
+        new($"Unsupported DB2 authentication mode '{value}'. Supported modes are Authentication=SERVER (3), security_mechanism=7 (USRENCPWD), Authentication=SERVER_ENCRYPT / security_mechanism=9 (EUSRIDPWD), and security_mechanism=11 (Kerberos/GSSAPI with krb5_ccache, krb5_keytab or gssapi_token_file).");
 
     private static bool TryParseDuration(string input, out TimeSpan timeout)
     {

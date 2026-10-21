@@ -113,9 +113,10 @@ internal static partial class DdmCodec
 
     public static byte[] PackExcsatManagerLevels(IReadOnlyList<ManagerLevel> levels) => PackObject(CodePoint.EXCSAT, PackBytes(CodePoint.MGRLVLLS, PackManagerLevels(levels)));
 
-    public static byte[] PackAccsec(string database, ushort securityMechanism, ReadOnlySpan<byte> token = default)
+    public static byte[] PackAccsec(string database, ushort securityMechanism, ReadOnlySpan<byte> token = default, ushort? encryptionAlgorithm = null)
     {
         var pieces = new List<byte[]> { PackUInt16(CodePoint.SECMEC, securityMechanism), PackString(CodePoint.RDBNAM, database, DdmStringEncoding.Cp500) };
+        if (encryptionAlgorithm is { } algorithm) pieces.Add(PackUInt16(CodePoint.ENCALG, algorithm));
         if (!token.IsEmpty) pieces.Add(PackBytes(CodePoint.SECTKN, token));
         return PackObject(CodePoint.ACCSEC, Concat(pieces.ToArray()));
     }
@@ -147,6 +148,19 @@ internal static partial class DdmCodec
             PackUInt16(CodePoint.SECMEC, 9),
             PackString(CodePoint.RDBNAM, database, DdmStringEncoding.Cp500),
             PackBytes(CodePoint.SECTKN, encryptedUserid),
+            PackBytes(CodePoint.SECTKN, encryptedPassword)));
+
+    /// <summary>
+    /// Builds the USRENCPWD (SECMEC 7) SECCHK: cleartext USRID plus one SECTKN carrying the DES-CBC-encrypted
+    /// password (Derby's layout). The client Diffie-Hellman public key already travelled in ACCSEC. Verified
+    /// against Db2 LUW SERVER_ENCRYPT: an encrypted PASSWORD parameter instead of SECTKN is rejected with
+    /// SECCHKCD=16, and an extra SECTKN with AGNPRMRM.
+    /// </summary>
+    public static byte[] PackSecchkUsrencpwd(string database, string user, ReadOnlySpan<byte> encryptedPassword) =>
+        PackObject(CodePoint.SECCHK, Concat(
+            PackUInt16(CodePoint.SECMEC, 7),
+            PackString(CodePoint.RDBNAM, database, DdmStringEncoding.Cp500),
+            PackString(CodePoint.USRID, user, DdmStringEncoding.Cp500),
             PackBytes(CodePoint.SECTKN, encryptedPassword)));
 
     /// <summary>
