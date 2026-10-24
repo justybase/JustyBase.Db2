@@ -38,6 +38,8 @@ NUPKG_ALLOWLIST = {
         "JustyBase.Db2.nuspec",
         "lib/net10.0/JustyBase.Db2.dll",
         "lib/net10.0/JustyBase.Db2.xml",
+        "lib/net11.0/JustyBase.Db2.dll",
+        "lib/net11.0/JustyBase.Db2.xml",
     },
     "JustyBase.Db2.IBMCompat": COMMON_METADATA
     | {
@@ -47,13 +49,23 @@ NUPKG_ALLOWLIST = {
         "JustyBase.Db2.IBMCompat.nuspec",
         "lib/net10.0/JustyBase.Db2.IBMCompat.dll",
         "lib/net10.0/JustyBase.Db2.IBMCompat.xml",
+        "lib/net11.0/JustyBase.Db2.IBMCompat.dll",
+        "lib/net11.0/JustyBase.Db2.IBMCompat.xml",
     },
 }
 SNUPKG_ALLOWLIST = {
     "JustyBase.Db2": COMMON_METADATA
-    | {"JustyBase.Db2.nuspec", "lib/net10.0/JustyBase.Db2.pdb"},
+    | {
+        "JustyBase.Db2.nuspec",
+        "lib/net10.0/JustyBase.Db2.pdb",
+        "lib/net11.0/JustyBase.Db2.pdb",
+    },
     "JustyBase.Db2.IBMCompat": COMMON_METADATA
-    | {"JustyBase.Db2.IBMCompat.nuspec", "lib/net10.0/JustyBase.Db2.IBMCompat.pdb"},
+    | {
+        "JustyBase.Db2.IBMCompat.nuspec",
+        "lib/net10.0/JustyBase.Db2.IBMCompat.pdb",
+        "lib/net11.0/JustyBase.Db2.IBMCompat.pdb",
+    },
 }
 FORBIDDEN_SUBSTRINGS = ("clidriver", ".pem", ".key", ".env", ".pfx", ".p12", "keytab", "ccache")
 REQUIRED_NUPKG = {"README.md", "icon.png", "LICENSE", "THIRD-PARTY-NOTICES.md"}
@@ -133,7 +145,12 @@ def check_directory(directory: Path) -> list[str]:
         required = REQUIRED_NUPKG | ({"README.md"} if pid == "JustyBase.Db2.IBMCompat" else set())
         errors += check(path, NUPKG_ALLOWLIST[pid], required)
     for path in snupkgs:
-        errors += check(path, SNUPKG_ALLOWLIST[package_id(path)], {"lib/net10.0/" + package_id(path) + ".pdb"})
+        pid = package_id(path)
+        errors += check(
+            path,
+            SNUPKG_ALLOWLIST[pid],
+            {"lib/net10.0/" + pid + ".pdb", "lib/net11.0/" + pid + ".pdb"},
+        )
     if len(snupkgs) != len(nupkgs):
         errors.append(f"expected one .snupkg per .nupkg, found {len(snupkgs)} and {len(nupkgs)}")
     return errors

@@ -139,7 +139,7 @@ case "$IMAGE" in
   *) die "DB2_IT_IMAGE must include an explicit tag: $IMAGE" ;;
 esac
 [ -n "$EXPECTED_DIGEST" ] || die "DB2_IT_IMAGE override must pin a digest (image@sha256:...) or set DB2_IT_EXPECTED_DIGEST."
-command -v dotnet >/dev/null 2>&1 || die "dotnet not found. Install the .NET 10 SDK."
+command -v dotnet >/dev/null 2>&1 || die "dotnet not found. Install the .NET 10 or 11 SDK."
 
 # ----------------------------------------------------------------- startup ---
 RUN_TAG="$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"

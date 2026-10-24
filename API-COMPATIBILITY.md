@@ -33,7 +33,7 @@ Protocol, DRDA/DDM encoding, converters, packet types and Kerberos/SECMEC intern
 | Supported alpha | `Db2Config`, `Db2Session`, `Db2Pool`, structured errors, `Db2ColumnMetadata`, typed values, the ADO.NET provider | Changes must be deliberate, documented in the CHANGELOG and reflected in the snapshot. |
 | Experimental | `IBM.Data.Db2` source-compatibility facade and IBM-shaped bulk-copy helpers | May change between alpha releases; gaps are listed in the migration guide. |
 
-Before 1.0, Semantic Versioning permits breaking changes through minor-version changes. `0.1.0-alpha.3` is intentionally not presented as a stable contract.
+Before 1.0, Semantic Versioning permits breaking changes through minor-version changes. `0.1.0-alpha.4` is intentionally not presented as a stable contract.
 
 ## Extension points
 

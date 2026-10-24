@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.1.0-alpha.3 - 2026-10-21
+## 0.1.0-alpha.4 - 2026-10-24
+
+- Both packages now target `net10.0` and `net11.0` (driver, IBMCompat and tests; CI, publish and dry-run workflows install .NET 10.0.112 and 11.0.100-rc.2; SBOM/package-contents allowlist and docs updated). Building `net11.0` requires the .NET 11 SDK.
+- `DecodePackedDecimal` now builds the decimal string with a single allocation via `stackalloc` instead of `StringBuilder`/intermediate strings (measured ~5x faster micro, ~15-18% faster Mixed 100k-row native replay, ~36% less allocation; buffered `RowValueParser` path unchanged).
 
 - DRDA `USRENCPWD` (SECMEC 7) authentication: `security_mechanism=7` (`usrencpwd`, `encrypted_password_security`, `secmec7`) sends a clear user ID and the DES-CBC-encrypted password in `SECCHK/SECTKN`, with the client DH key in `ACCSEC` (`ENCALG=1`) and the IV taken from the CP500 user ID. AES (`ENCALG=2`) and other algorithms fail closed before credentials are sent. Opt-in live test `Secmec7LiveTests` (`DB2_SECMEC7_TEST_DSN`, category `Secmec7Integration`).
 - A connection without a configured security mechanism now follows a server that refuses the plaintext default: when `ACCSECRD` lists `9` or `7` (Db2 `AUTHENTICATION=SERVER_ENCRYPT`), the driver sends a second `ACCSEC` on the same connection with `9`, else `7`, before any credentials are sent. An explicitly configured mechanism, including `3`, is never changed, and a rejection of the retried mechanism ends the handshake.

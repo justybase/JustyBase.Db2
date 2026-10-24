@@ -24,7 +24,9 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.112
+          dotnet-version: |
+            10.0.112
+            11.0.100-rc.2.26504.105
 
       - name: Build test project
         run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
@@ -85,7 +87,9 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.112
+          dotnet-version: |
+            10.0.112
+            11.0.100-rc.2.26504.105
 
       - name: Build platform smoke tests
         run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
@@ -120,7 +124,9 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.112
+          dotnet-version: |
+            10.0.112
+            11.0.100-rc.2.26504.105
 
       - name: Run isolated Db2 smoke suite
         env:
@@ -153,7 +159,9 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.112
+          dotnet-version: |
+            10.0.112
+            11.0.100-rc.2.26504.105
 
       - name: Run isolated IBM provider parity suite
         env:

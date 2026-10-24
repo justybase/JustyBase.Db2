@@ -30,7 +30,9 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.112
+          dotnet-version: |
+            10.0.112
+            11.0.100-rc.2.26504.105
 
       - name: Verify release tag and version
         shell: bash

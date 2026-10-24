@@ -1,8 +1,8 @@
 # JustyBase.Db2
 
-> Experimental managed .NET 10 driver for **IBM Db2 LUW**. Speaks DRDA/DDM directly over TCP/TLS, with no IBM CLI or ODBC runtime dependency.
+> Experimental managed .NET 10/11 driver for **IBM Db2 LUW**. Speaks DRDA/DDM directly over TCP/TLS, with no IBM CLI or ODBC runtime dependency.
 
-> **Alpha prerelease (`0.1.0-alpha.3`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.4`). Not recommended for production use.**
 > APIs and protocol coverage may change between prereleases. Validate against your own Db2 environment and workload before relying on it.
 
 `JustyBase.Db2` is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.
@@ -15,11 +15,11 @@ New applications should use this package's native API and ADO.NET provider. For 
 
 ## Requirements
 
-- .NET 10 SDK or runtime (`net10.0` is the only target framework in this alpha).
+- .NET 10 or 11 SDK or runtime (`net10.0` and `net11.0` targets; building `net11.0` requires the .NET 11 SDK).
 - Reachability to an IBM Db2 LUW server over TCP, optionally TLS.
 - Kerberos (SECMEC 11) support is limited to Linux x86_64 with the system MIT GSS-API library.
 
-Maintainer qualification currently covers **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112. Earlier live verification also covered Db2 LUW 11.5.8. Other platforms and Db2 versions are not regularly tested. Db2 for z/OS and IBM i are not supported targets.
+Maintainer qualification currently covers **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112 (`net10.0`) and 11.0.100-rc.2 (`net11.0`). Earlier live verification also covered Db2 LUW 11.5.8. Other platforms and Db2 versions are not regularly tested. Db2 for z/OS and IBM i are not supported targets.
 
 ## Features
 
@@ -88,7 +88,7 @@ Hostname validation stays enabled. Unsupported security values are rejected inst
 
 ## Known limitations
 
-- Single target framework: `net10.0`. No earlier .NET or .NET Framework targets.
+- Target frameworks: `net10.0` and `net11.0`. No earlier .NET or .NET Framework targets.
 - Protocol coverage is the subset exercised by the qualification suite. Unlisted SQL types or server features may fail or return less precise metadata.
 - LOB materialization is bounded: 16 MiB per materialized LOB and 32 MiB per materialized query result. Larger values must be streamed.
 - The native API's result types may change before 1.0.

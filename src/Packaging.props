@@ -5,7 +5,7 @@
     Keep this version prerelease until a separate stable-release decision is made.
   -->
   <PropertyGroup>
-    <Version>0.1.0-alpha.3</Version>
+    <Version>0.1.0-alpha.4</Version>
     <Authors>Krzysztof Dusko</Authors>
     <Copyright>Copyright (c) 2026 Krzysztof Dusko</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

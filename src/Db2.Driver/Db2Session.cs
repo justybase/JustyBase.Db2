@@ -2838,6 +2838,57 @@ public sealed partial class Db2Session : IAsyncDisposable
     private static string DecodePackedDecimal(ReadOnlySpan<byte> bytes, int scale)
     {
         if (bytes.Length == 0) return "0";
+        for (var i = 0; i < bytes.Length - 1; i++)
+            if ((bytes[i] >> 4) > 9 || (bytes[i] & 0xF) > 9)
+                return DecodePackedDecimalSlow(bytes, scale);
+        if ((bytes[^1] >> 4) > 9) return DecodePackedDecimalSlow(bytes, scale);
+        var negative = (bytes[^1] & 0xF) is 0x0B or 0x0D;
+        var total = bytes.Length * 2 - 1;
+        var first = total;
+        var pos = 0;
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            var hi = bytes[i] >> 4;
+            if (i == bytes.Length - 1) { if (hi != 0) { first = pos; break; } pos++; }
+            else { var lo = bytes[i] & 0xF; if (hi != 0) { first = pos; break; } pos++; if (lo != 0) { first = pos; break; } pos++; }
+        }
+        var trimmedLen = first >= total ? 1 : total - first;
+        var resultLen = (scale > 0 ? (trimmedLen <= scale ? 2 + scale : trimmedLen + 1) : trimmedLen) + (negative ? 1 : 0);
+        Span<char> tmp = stackalloc char[64];
+        var span = tmp[..resultLen];
+        var p = 0;
+        if (negative) span[p++] = '-';
+        if (scale > 0)
+        {
+            if (trimmedLen <= scale)
+            {
+                span[p++] = '0'; span[p++] = '.';
+                for (var i = 0; i < scale - trimmedLen; i++) span[p++] = '0';
+                if (first >= total) span[p++] = '0';
+                else for (var d = first; d < total; d++)
+                {
+                    var digit = d < (bytes.Length - 1) * 2 ? ((d % 2 == 0) ? bytes[d / 2] >> 4 : bytes[d / 2] & 0xF) : bytes[^1] >> 4;
+                    span[p++] = (char)('0' + digit);
+                }
+            }
+            else
+            {
+                var intDigits = trimmedLen - scale;
+                for (var k = 0; k < intDigits; k++) { var d = first + k; var digit = d < (bytes.Length - 1) * 2 ? ((d % 2 == 0) ? bytes[d / 2] >> 4 : bytes[d / 2] & 0xF) : bytes[^1] >> 4; span[p++] = (char)('0' + digit); }
+                span[p++] = '.';
+                for (var k = intDigits; k < trimmedLen; k++) { var d = first + k; var digit = d < (bytes.Length - 1) * 2 ? ((d % 2 == 0) ? bytes[d / 2] >> 4 : bytes[d / 2] & 0xF) : bytes[^1] >> 4; span[p++] = (char)('0' + digit); }
+            }
+        }
+        else
+        {
+            if (first >= total) span[p++] = '0';
+            else for (var d = first; d < total; d++) { var digit = d < (bytes.Length - 1) * 2 ? ((d % 2 == 0) ? bytes[d / 2] >> 4 : bytes[d / 2] & 0xF) : bytes[^1] >> 4; span[p++] = (char)('0' + digit); }
+        }
+        return new string(span);
+    }
+
+    private static string DecodePackedDecimalSlow(ReadOnlySpan<byte> bytes, int scale)
+    {
         var digits = new StringBuilder(bytes.Length * 2);
         for (var i = 0; i < bytes.Length - 1; i++) { digits.Append(bytes[i] >> 4); digits.Append(bytes[i] & 0x0f); }
         var last = bytes[^1]; digits.Append(last >> 4);

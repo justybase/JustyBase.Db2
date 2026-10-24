@@ -7,7 +7,7 @@ This document summarizes the compatibility baseline and automated test lanes for
 Maintainer qualification currently targets **Linux x64** with:
 
 - **Db2 LUW 12.1.5** over TCP and TLS.
-- **.NET SDK 10.0.112**.
+- **.NET SDK 10.0.112** (`net10.0`) and **11.0.100-rc.2** (`net11.0`).
 
 ## Qualification gates
 

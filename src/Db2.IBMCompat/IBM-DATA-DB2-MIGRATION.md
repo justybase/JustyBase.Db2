@@ -8,9 +8,9 @@ Read the [driver README](../Db2.Driver/README.md) for complete examples of conne
 
 Remove the IBM package from the application project. Do not reference both packages in one compilation: both define names such as `IBM.Data.Db2.DB2Connection`.
 
-The prerelease packages are published to NuGet.org. Install the compatibility package with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.3`; its `JustyBase.Db2` dependency is installed automatically. Before migrating an application, validate the prerelease against your environment and workload.
+The prerelease packages are published to NuGet.org. Install the compatibility package with `dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.4`; its `JustyBase.Db2` dependency is installed automatically. Before migrating an application, validate the prerelease against your environment and workload.
 
-`JustyBase.Db2.IBMCompat` depends on `JustyBase.Db2`, which is pulled in automatically. Both packages target `net10.0` and share the prerelease version `0.1.0-alpha.3`. **This package is highly experimental and not recommended for production use.** See the [compatibility package README](README.md) for its status. New applications should use the native `JustyBase.Db2` API instead.
+`JustyBase.Db2.IBMCompat` depends on `JustyBase.Db2`, which is pulled in automatically. Both packages target `net10.0` and `net11.0` and share the prerelease version `0.1.0-alpha.4`. **This package is highly experimental and not recommended for production use.** See the [compatibility package README](README.md) for its status. New applications should use the native `JustyBase.Db2` API instead.
 
 Keep `using IBM.Data.Db2;` for the compatibility facade, or use `JustyBase.Db2.AdoNet` and instantiate `Db2AdoConnection` directly. Both use the same native driver implementation.
 
