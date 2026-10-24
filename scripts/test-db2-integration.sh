@@ -140,6 +140,10 @@ case "$IMAGE" in
 esac
 [ -n "$EXPECTED_DIGEST" ] || die "DB2_IT_IMAGE override must pin a digest (image@sha256:...) or set DB2_IT_EXPECTED_DIGEST."
 command -v dotnet >/dev/null 2>&1 || die "dotnet not found. Install the .NET 10 or 11 SDK."
+if grep -qE 'net11\.0' "$REPO_ROOT/src/Db2.Tests/Db2.Tests.csproj" 2>/dev/null \
+  && ! dotnet --list-sdks 2>/dev/null | grep -qE '^11\.'; then
+  die "the tests target net11.0 but no .NET 11 SDK is on PATH (found SDKs: $(dotnet --list-sdks 2>/dev/null | paste -sd' ' -)). Put the .NET 11 SDK first on PATH; building net11.0 requires 11.0.100-rc.2+."
+fi
 
 # ----------------------------------------------------------------- startup ---
 RUN_TAG="$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
