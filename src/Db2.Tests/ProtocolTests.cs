@@ -403,14 +403,16 @@ public sealed class ProtocolTests
         Assert.Contains("SQLCODE:-952", utf8Error.Message);
         Assert.Equal(-952, utf8Error.SqlCode);
         Assert.Null(utf8Error.SqlState);
-        Assert.Equal(Db2ErrorKind.SqlError, utf8Error.ErrorKind);
+        Assert.Equal(Db2ErrorKind.OperationCancelled, utf8Error.ErrorKind);
+        Assert.Equal(Db2OperationOutcome.Confirmed, Assert.IsAssignableFrom<IDb2Error>(utf8Error).Outcome);
 
         var cp500 = DdmCodec.PackBytes(CodePoint.SRVDGN, Ebcdic.EncodeCp500("SQLCODE:-952 SQLSTATE:57014"));
         var cp500Error = Assert.IsType<Db2ServerErrorException>(Db2Session.ServerError(cp500));
         Assert.Contains("SQLCODE:-952", cp500Error.Message);
         Assert.Equal(-952, cp500Error.SqlCode);
         Assert.Equal("57014", cp500Error.SqlState);
-        Assert.Equal(Db2ErrorKind.SqlError, cp500Error.ErrorKind);
+        Assert.Equal(Db2ErrorKind.OperationCancelled, cp500Error.ErrorKind);
+        Assert.Equal(Db2OperationOutcome.Confirmed, Assert.IsAssignableFrom<IDb2Error>(cp500Error).Outcome);
     }
 
     [Fact]

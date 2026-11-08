@@ -214,7 +214,10 @@ public sealed class Db2Pool : IAsyncDisposable
         try
         {
             Exception? cleanupError = null;
-            if (!IsClosed && !session.IsClosed && !Expired(session, false))
+            // JDC OUT-07/POOL-05: an operation that may have reached Db2 is not
+            // safe to reuse, even when the socket still looks healthy.
+            var outcomeUncertain = primaryError is IDb2Error { Outcome: Db2OperationOutcome.Unknown };
+            if (!outcomeUncertain && !IsClosed && !session.IsClosed && !Expired(session, false))
             {
                 var resetStarted = Stopwatch.GetTimestamp();
                 using var resetActivity = Db2Diagnostics.Begin("reset");
@@ -224,7 +227,7 @@ public sealed class Db2Pool : IAsyncDisposable
             var dispose = false;
             lock (_idleGate)
             {
-                if (IsClosed || session.IsClosed || Expired(session, false) || cleanupError is not null)
+                if (outcomeUncertain || IsClosed || session.IsClosed || Expired(session, false) || cleanupError is not null)
                 {
                     Interlocked.Decrement(ref _sessionCount);
                     dispose = true;

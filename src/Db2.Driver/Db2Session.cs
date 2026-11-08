@@ -225,6 +225,7 @@ public sealed partial class Db2Session : IAsyncDisposable
     private ushort _sqlamLevel = 11;
     private Task<bool>? _interruptPending;
     private int _operationActive;
+    private int _requestWritten;
     private int _interruptUsed;
     private readonly string _database;
     private readonly ushort _securityMechanism;
@@ -369,6 +370,7 @@ public sealed partial class Db2Session : IAsyncDisposable
         if (config.Timeout > TimeSpan.Zero) timeoutSource.CancelAfter(config.Timeout);
         var client = new TcpClient();
         client.NoDelay = true;
+        var handshakeStarted = false;
         try
         {
             await client.ConnectAsync(config.Host, config.Port, timeoutSource.Token).ConfigureAwait(false);
@@ -396,8 +398,17 @@ public sealed partial class Db2Session : IAsyncDisposable
             stream = new Db2PerformanceCounters.CountingStream(stream);
 #endif
             var session = new Db2Session(client, stream, config, kerberosPlan: kerberosPlan, kerberosProviderFactory: kerberosProviderFactory);
+            handshakeStarted = true;
             await session.HandshakeAsync(timeoutSource.Token).ConfigureAwait(false);
             return session;
+        }
+        catch (OperationCanceledException error) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+        {
+            client.Dispose();
+            throw new Db2CommandTimeoutException(
+                config.Timeout,
+                error,
+                handshakeStarted ? Db2OperationOutcome.Unknown : Db2OperationOutcome.NotStarted);
         }
         catch
         {
@@ -2945,6 +2956,7 @@ public sealed partial class Db2Session : IAsyncDisposable
 
     private async Task FlushWritesAsync(CancellationToken token)
     {
+        Volatile.Write(ref _requestWritten, 1);
         try { await _writeBuffer.FlushAsync(_stream, token).ConfigureAwait(false); }
         catch { _closed = true; throw; }
     }
@@ -2962,6 +2974,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             // Forward-only EXTDTA cannot be held in the chain buffer. Flush its
             // preceding chained commands before streaming the external source.
             await FlushWritesAsync(cancellationToken).ConfigureAwait(false);
+            Volatile.Write(ref _requestWritten, 1);
             _correlationId = await DssCodec.WriteExternalLobAsync(_stream, source, externalData.Length, _correlationId, nextHasSameId, lastPacket, cancellationToken, sourceReadCancellationToken ?? cancellationToken).ConfigureAwait(false);
         }
         catch
@@ -3055,6 +3068,7 @@ public sealed partial class Db2Session : IAsyncDisposable
                 catch { /* A completed interrupt does not poison the next request. */ }
             }
 
+            Volatile.Write(ref _requestWritten, 0);
             if (commandOptions is { User: not null } or { ClientInfo: not null })
                 await ApplyContextStateLockedAsync(commandOptions, cancellationToken).ConfigureAwait(false);
 
@@ -3127,7 +3141,9 @@ public sealed partial class Db2Session : IAsyncDisposable
         catch (TimeoutException)
         {
             await DisposeAsync().ConfigureAwait(false);
-            throw new Db2ConnectionClosedException($"DB2 command did not settle within {cleanupTimeout} after SQLINTR.");
+            throw new Db2ConnectionClosedException(
+                $"DB2 command did not settle within {cleanupTimeout} after SQLINTR.",
+                Db2OperationOutcome.Unknown);
         }
         catch { /* The server's SQLCODE -952 is expected; the task is now fully settled. */ }
     }
@@ -3138,7 +3154,9 @@ public sealed partial class Db2Session : IAsyncDisposable
         if (pending is null)
         {
             await DisposeAsync().ConfigureAwait(false);
-            throw new Db2ConnectionClosedException("DB2 cancellation was requested but no SQLINTR acknowledgment was received.");
+            throw new Db2ConnectionClosedException(
+                "DB2 cancellation was requested but no SQLINTR acknowledgment was received.",
+                Db2OperationOutcome.Unknown);
         }
         try
         {
@@ -3148,14 +3166,19 @@ public sealed partial class Db2Session : IAsyncDisposable
         catch (Exception error)
         {
             await DisposeAsync().ConfigureAwait(false);
-            throw new Db2ConnectionClosedException($"DB2 SQLINTR could not be confirmed; the session was discarded. {error.Message}");
+            throw new Db2ConnectionClosedException(
+                $"DB2 SQLINTR could not be confirmed; the session was discarded. {error.Message}",
+                Db2OperationOutcome.Unknown);
         }
     }
 
-    private static void ThrowCommandCancellation(CancellationToken callerToken, CancellationToken operationToken, Db2CommandOptions? options, Exception? inner = null)
+    private void ThrowCommandCancellation(CancellationToken callerToken, CancellationToken operationToken, Db2CommandOptions? options, Exception? inner = null)
     {
         if (options?.Timeout > TimeSpan.Zero && operationToken.IsCancellationRequested && !callerToken.IsCancellationRequested)
-            throw new Db2CommandTimeoutException(options.Timeout, inner);
+            throw new Db2CommandTimeoutException(
+                options.Timeout,
+                inner,
+                Volatile.Read(ref _requestWritten) != 0 ? Db2OperationOutcome.Unknown : Db2OperationOutcome.NotStarted);
         throw new OperationCanceledException(callerToken.IsCancellationRequested ? callerToken : operationToken);
     }
 

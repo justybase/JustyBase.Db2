@@ -21,6 +21,9 @@ public enum Db2ErrorKind
     Transport,
     Protocol,
     ResourceLimit,
+    OperationCancelled,
+    Timeout,
+    Other,
 }
 
 /// <summary>Confirmation of the failing operation, independent of retry policy.</summary>
@@ -30,10 +33,36 @@ public enum Db2OperationOutcome { NotStarted, Confirmed, Unknown }
 public interface IDb2Error
 {
     Db2ErrorKind ErrorKind { get; }
-    Db2OperationOutcome Outcome => ErrorKind is Db2ErrorKind.Configuration or Db2ErrorKind.PoolTimeout or Db2ErrorKind.PoolExhausted
-        ? Db2OperationOutcome.NotStarted : SqlCode.HasValue ? Db2OperationOutcome.Confirmed : Db2OperationOutcome.Unknown;
+
+    /// <summary>
+    /// Phase-derived outcome override. Null means the outcome follows the stable
+    /// kind rules below; classified errors created at an operation boundary set
+    /// this when the request-write phase is known.
+    /// </summary>
+    Db2OperationOutcome? OutcomeOverride => null;
+
+    Db2OperationOutcome Outcome => OutcomeOverride
+        ?? (ErrorKind is Db2ErrorKind.Configuration
+            or Db2ErrorKind.ConnectionClosed
+            or Db2ErrorKind.DatabaseNotFound
+            or Db2ErrorKind.Authentication
+            or Db2ErrorKind.PoolTimeout
+            or Db2ErrorKind.PoolExhausted
+            or Db2ErrorKind.Unsupported
+            ? Db2OperationOutcome.NotStarted
+            : SqlCode.HasValue ? Db2OperationOutcome.Confirmed : Db2OperationOutcome.Unknown);
+
     int? SqlCode { get; }
     string? SqlState { get; }
+}
+
+internal static class Db2ErrorClassification
+{
+    /// <summary>Db2's SQLINTR confirmation code, with or without an explicit SQLSTATE.</summary>
+    public static bool IsConfirmedCancellation(int? sqlCode) => sqlCode == -952;
+
+    public static Db2ErrorKind SqlKind(int sqlCode) =>
+        IsConfirmedCancellation(sqlCode) ? Db2ErrorKind.OperationCancelled : Db2ErrorKind.SqlError;
 }
 
 /// <summary>A successful Db2 operation that also returned warning diagnostics.</summary>
@@ -45,11 +74,19 @@ public sealed class Db2WarningEventArgs(Db2Warning warning) : EventArgs
     public Db2Warning Warning { get; } = warning;
 }
 
-/// <summary>A closed or disposed Db2 session was used.</summary>
-public sealed class Db2ConnectionClosedException(string message = "DB2 connection is closed.")
-    : InvalidOperationException(message), IDb2Error
+/// <summary>A closed or discarded Db2 session was used, or a session was discarded after its state became uncertain.</summary>
+public sealed class Db2ConnectionClosedException : InvalidOperationException, IDb2Error
 {
+    private readonly Db2OperationOutcome? _outcome;
+
+    public Db2ConnectionClosedException(string message = "DB2 connection is closed.")
+        : this(message, null) { }
+
+    public Db2ConnectionClosedException(string message, Db2OperationOutcome? outcome)
+        : base(message) => _outcome = outcome;
+
     public Db2ErrorKind ErrorKind => Db2ErrorKind.ConnectionClosed;
+    public Db2OperationOutcome? OutcomeOverride => _outcome;
     public int? SqlCode => null;
     public string? SqlState => null;
 }
@@ -111,7 +148,7 @@ public sealed class Db2AuthorizationException(string message = "DB2 authorizatio
 public sealed class Db2SqlException(int sqlCode, string sqlState, string message)
     : InvalidOperationException(message), IDb2Error
 {
-    public Db2ErrorKind ErrorKind => Db2ErrorKind.SqlError;
+    public Db2ErrorKind ErrorKind => Db2ErrorClassification.SqlKind(sqlCode);
     public int? SqlCode { get; } = sqlCode;
     public string? SqlState { get; } = sqlState;
 }
@@ -123,7 +160,9 @@ public sealed class Db2ServerErrorException(string message)
     private static readonly Regex SqlCodePattern = new(@"\bSQLCODE\s*[:=]\s*(-?\d+)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     private static readonly Regex SqlStatePattern = new(@"\bSQLSTATE\s*[:=]\s*([0-9A-Z]{5})\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    public Db2ErrorKind ErrorKind => SqlCode.HasValue || SqlState is not null ? Db2ErrorKind.SqlError : Db2ErrorKind.ServerError;
+    public Db2ErrorKind ErrorKind => SqlCode is { } code
+        ? Db2ErrorClassification.SqlKind(code)
+        : SqlState is not null ? Db2ErrorKind.SqlError : Db2ErrorKind.ServerError;
     public int? SqlCode { get; } = ParseSqlCode(message);
     public string? SqlState { get; } = ParseSqlState(message);
 
@@ -152,8 +191,24 @@ public sealed class Db2UnsupportedFeatureException(string message)
 }
 
 /// <summary>A command deadline elapsed. The operation was interrupted with SQLINTR; if DB2 could not confirm cancellation, the session is discarded.</summary>
-public sealed class Db2CommandTimeoutException(TimeSpan timeout, Exception? innerException = null)
-    : TimeoutException($"DB2 command exceeded its {timeout} deadline.", innerException);
+public sealed class Db2CommandTimeoutException : TimeoutException, IDb2Error
+{
+    private readonly Db2OperationOutcome _outcome;
+
+    public Db2CommandTimeoutException(TimeSpan timeout, Exception? innerException = null)
+        : this(timeout, innerException, Db2OperationOutcome.Unknown) { }
+
+    public Db2CommandTimeoutException(TimeSpan timeout, Exception? innerException, Db2OperationOutcome outcome)
+        : base($"DB2 command exceeded its {timeout} deadline.", innerException) => _outcome = outcome;
+
+    public Db2ErrorKind ErrorKind => Db2ErrorKind.Timeout;
+    public Db2OperationOutcome? OutcomeOverride =>
+        (InnerException as IDb2Error)?.Outcome == Db2OperationOutcome.Confirmed
+            ? Db2OperationOutcome.Confirmed
+            : _outcome;
+    public int? SqlCode => (InnerException as IDb2Error)?.SqlCode;
+    public string? SqlState => (InnerException as IDb2Error)?.SqlState;
+}
 
 /// <summary>A batch parameter set failed after earlier sets may already have committed.</summary>
 public sealed class Db2BatchExecutionException(
@@ -174,6 +229,14 @@ public sealed class Db2BatchExecutionException(
     /// <summary>Rows affected by completed sets, based only on acknowledgements received from Db2.</summary>
     public long RowsAffected { get; } = rowsAffected;
     public Db2ErrorKind ErrorKind => Db2ErrorKind.BatchExecution;
+    public Db2OperationOutcome? OutcomeOverride =>
+        (InnerException as IDb2Error)?.SqlCode is not null
+            ? Db2OperationOutcome.Confirmed
+            : ParameterSetIndex is null
+                ? Db2OperationOutcome.NotStarted
+                : (InnerException as IDb2Error)?.Outcome == Db2OperationOutcome.NotStarted
+                    ? Db2OperationOutcome.NotStarted
+                    : Db2OperationOutcome.Unknown;
     public int? SqlCode => (InnerException as IDb2Error)?.SqlCode;
     public string? SqlState => (InnerException as IDb2Error)?.SqlState;
 }
@@ -184,7 +247,7 @@ public sealed class Db2BatchCancellationException(
     int completedParameterSets,
     int? inFlightParameterSetIndex,
     long rowsAffected)
-    : OperationCanceledException("DB2 batch execution was cancelled.", cancellationToken)
+    : OperationCanceledException("DB2 batch execution was cancelled.", cancellationToken), IDb2Error
 {
     /// <summary>Number of parameter sets whose execution completed successfully before cancellation.</summary>
     public int CompletedParameterSets { get; } = completedParameterSets;
@@ -192,6 +255,11 @@ public sealed class Db2BatchCancellationException(
     public int? InFlightParameterSetIndex { get; } = inFlightParameterSetIndex;
     /// <summary>Rows affected by confirmed completed sets only.</summary>
     public long RowsAffected { get; } = rowsAffected;
+    public Db2ErrorKind ErrorKind => Db2ErrorKind.OperationCancelled;
+    public Db2OperationOutcome? OutcomeOverride =>
+        InFlightParameterSetIndex is null ? Db2OperationOutcome.NotStarted : Db2OperationOutcome.Unknown;
+    public int? SqlCode => null;
+    public string? SqlState => null;
 }
 
 public sealed class Db2PoolTimeoutException : TimeoutException, IDb2Error

@@ -7,6 +7,32 @@ namespace JustyBase.Db2.Tests;
 public sealed class PoolDisposalFailureTests
 {
     [Fact]
+    public async Task AnUnknownOperationOutcomeDiscardsTheLeaseWithoutReset()
+    {
+        var session = CreateSession(new DisposalFailureStream(null, new IOException("stream dispose failed")), baselineCaptured: true);
+        var factoryCalls = 0;
+        var factoryError = new InvalidOperationException("replacement factory called");
+        await using var pool = new Db2Pool(_ =>
+        {
+            if (Interlocked.Increment(ref factoryCalls) == 1) return Task.FromResult(session);
+            return Task.FromException<Db2Session>(factoryError);
+        }, new Db2PoolOptions(1));
+        var operationError = new Db2ConnectionClosedException("uncertain transport", Db2OperationOutcome.Unknown);
+
+        var thrown = await Assert.ThrowsAsync<Db2ConnectionClosedException>(() =>
+            pool.WithSessionAsync<int>((_, _) => Task.FromException<int>(operationError)));
+
+        Assert.Same(operationError, thrown);
+        Assert.Equal(0, pool.IdleSessionCount);
+        Assert.Equal(0, pool.SessionCount);
+        Assert.Equal(1, factoryCalls);
+
+        var replacementError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            pool.WithSessionAsync((_, _) => Task.FromResult(1)));
+        Assert.Same(factoryError, replacementError);
+    }
+
+    [Fact]
     public async Task ReturnDisposalFailurePreservesOperationErrorAndReleasesPoolSlot()
     {
         var disposeError = new IOException("stream dispose failed");

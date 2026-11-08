@@ -7,6 +7,14 @@
 - Added the self-contained JDC v1 contract (`docs/DRIVER-CONTRACT.md`) and the
   repo-specific conformance record (`docs/DRIVER-CONTRACT-STATUS.md`). No API or
   behaviour changes.
+- Added `Db2ErrorKind.OperationCancelled`, `Db2ErrorKind.Timeout` and
+  `Db2ErrorKind.Other`; `Db2SqlException`/`Db2ServerErrorException` report
+  `-952` as `OperationCancelled`, and command/batch timeouts and batch
+  cancellations now expose a phase-derived `IDb2Error.Outcome`.
+- `Db2CommandTimeoutException` and `Db2BatchCancellationException` implement
+  `IDb2Error`; `Db2BatchExecutionException` reports the outcome of its failing
+  set. The pool discards a lease whose classified outcome is `Unknown`.
+  API snapshot regenerated for the additive enum/interface members.
 
 ## 0.1.0-alpha.4 - 2026-10-24
 

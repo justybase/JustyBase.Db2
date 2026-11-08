@@ -260,8 +260,10 @@ public sealed partial class SessionTests
         });
 
         var provider = new ScriptedKerberosProvider(blockUntilCancelled: true);
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Db2Session.ConnectAsync(
+        var error = await Assert.ThrowsAsync<Db2CommandTimeoutException>(() => Db2Session.ConnectAsync(
             KerberosTestConfig(port, c => c.Timeout = TimeSpan.FromMilliseconds(400)), () => provider, CancellationToken.None));
+        Assert.Equal(Db2ErrorKind.Timeout, Assert.IsAssignableFrom<IDb2Error>(error).ErrorKind);
+        Assert.Equal(Db2OperationOutcome.Unknown, Assert.IsAssignableFrom<IDb2Error>(error).Outcome);
         await serverTask.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(1, provider.Disposals);
     }

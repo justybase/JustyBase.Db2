@@ -739,7 +739,8 @@ public sealed class LiveDb2Tests
             await Task.Delay(500);
             Assert.True(await waiter.InterruptAsync());
             var error = await Assert.ThrowsAsync<Db2ServerErrorException>(() => blockedUpdate);
-            Assert.Equal(Db2ErrorKind.SqlError, error.ErrorKind);
+            Assert.Equal(Db2ErrorKind.OperationCancelled, error.ErrorKind);
+            Assert.Equal(Db2OperationOutcome.Confirmed, Assert.IsAssignableFrom<IDb2Error>(error).Outcome);
             Assert.Equal(-952, error.SqlCode);
             Assert.Null(error.SqlState);
             Assert.Contains("SQLCODE:-952", error.Message);

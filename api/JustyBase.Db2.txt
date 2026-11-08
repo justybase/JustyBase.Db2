@@ -231,12 +231,17 @@ type class JustyBase.Db2.Db2AuthorizationException
 type class JustyBase.Db2.Db2BatchCancellationException
   .ctor(System.Threading.CancellationToken cancellationToken, System.Int32 completedParameterSets, System.Nullable<System.Int32> inFlightParameterSetIndex, System.Int64 rowsAffected)
   System.Int32 CompletedParameterSets { get; }
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
   System.Nullable<System.Int32> InFlightParameterSetIndex { get; }
+  System.Nullable<JustyBase.Db2.Db2OperationOutcome> OutcomeOverride { get; }
   System.Int64 RowsAffected { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
 type class JustyBase.Db2.Db2BatchExecutionException
   .ctor(System.Nullable<System.Int32> parameterSetIndex, System.Int32 completedParameterSets, System.Int64 rowsAffected, System.Exception innerException)
   System.Int32 CompletedParameterSets { get; }
   JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<JustyBase.Db2.Db2OperationOutcome> OutcomeOverride { get; }
   System.Nullable<System.Int32> ParameterSetIndex { get; }
   System.Int64 RowsAffected { get; }
   System.Nullable<System.Int32> SqlCode { get; }
@@ -305,6 +310,11 @@ type class JustyBase.Db2.Db2CommandOptions
   System.String User { get;init; }
 type class JustyBase.Db2.Db2CommandTimeoutException
   .ctor(System.TimeSpan timeout, System.Exception innerException)
+  .ctor(System.TimeSpan timeout, System.Exception innerException, JustyBase.Db2.Db2OperationOutcome outcome)
+  JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<JustyBase.Db2.Db2OperationOutcome> OutcomeOverride { get; }
+  System.Nullable<System.Int32> SqlCode { get; }
+  System.String SqlState { get; }
 type class JustyBase.Db2.Db2Config
   .ctor()
   System.String ToString()
@@ -342,7 +352,9 @@ type class JustyBase.Db2.Db2ConfigurationException
   System.String SqlState { get; }
 type class JustyBase.Db2.Db2ConnectionClosedException
   .ctor(System.String message)
+  .ctor(System.String message, System.Nullable<JustyBase.Db2.Db2OperationOutcome> outcome)
   JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
+  System.Nullable<JustyBase.Db2.Db2OperationOutcome> OutcomeOverride { get; }
   System.Nullable<System.Int32> SqlCode { get; }
   System.String SqlState { get; }
 type class JustyBase.Db2.Db2DatabaseNotFoundException
@@ -371,6 +383,8 @@ type enum JustyBase.Db2.Db2ErrorKind
   static JustyBase.Db2.Db2ErrorKind Configuration
   static JustyBase.Db2.Db2ErrorKind ConnectionClosed
   static JustyBase.Db2.Db2ErrorKind DatabaseNotFound
+  static JustyBase.Db2.Db2ErrorKind OperationCancelled
+  static JustyBase.Db2.Db2ErrorKind Other
   static JustyBase.Db2.Db2ErrorKind ParameterConversion
   static JustyBase.Db2.Db2ErrorKind PoolExhausted
   static JustyBase.Db2.Db2ErrorKind PoolTimeout
@@ -378,6 +392,7 @@ type enum JustyBase.Db2.Db2ErrorKind
   static JustyBase.Db2.Db2ErrorKind ResourceLimit
   static JustyBase.Db2.Db2ErrorKind ServerError
   static JustyBase.Db2.Db2ErrorKind SqlError
+  static JustyBase.Db2.Db2ErrorKind Timeout
   static JustyBase.Db2.Db2ErrorKind Transport
   static JustyBase.Db2.Db2ErrorKind Unsupported
 type class JustyBase.Db2.Db2ExecutionResult
@@ -643,6 +658,7 @@ type class JustyBase.Db2.Db2XmlStream
 type interface JustyBase.Db2.IDb2Error
   JustyBase.Db2.Db2ErrorKind ErrorKind { get; }
   JustyBase.Db2.Db2OperationOutcome Outcome { get; }
+  System.Nullable<JustyBase.Db2.Db2OperationOutcome> OutcomeOverride { get; }
   System.Nullable<System.Int32> SqlCode { get; }
   System.String SqlState { get; }
 type enum JustyBase.Db2.Types.SqlType
