@@ -1,6 +1,6 @@
 # Qualification and compatibility
 
-This document summarizes the compatibility baseline and automated test lanes for the current alpha, along with the additional checks used for release qualification.
+This document summarizes the compatibility baseline and automated test lanes for the current alpha, along with the additional checks used for release qualification. Detailed cross-driver qualification evidence is maintained privately by the project maintainer; this repository contains only a public-safe summary and builds and tests without access to that private harness.
 
 ## Current tested baseline
 
