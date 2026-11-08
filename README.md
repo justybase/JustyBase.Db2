@@ -67,6 +67,10 @@ Use `security_mechanism=7` (also `secmec=7`, `usrencpwd` or `encrypted_password_
 - **APIs may change** before 1.0, including the native API and result types.
 - **Not yet recommended for production use.** Validate against your own Db2 environment and workload first.
 
+## Cross-driver contract
+
+The observable behaviour implemented here is defined by [JDC v1](docs/DRIVER-CONTRACT.md); known gaps are recorded in [the status file](docs/DRIVER-CONTRACT-STATUS.md).
+
 ## Requirements
 
 - **.NET 10 or 11** (`net10.0`, `net11.0`) for the current alpha. Building the `net11.0` target requires the .NET 11 SDK (11.0.100-rc.2 or newer).

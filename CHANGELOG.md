@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Added the self-contained JDC v1 contract (`docs/DRIVER-CONTRACT.md`) and the
+  repo-specific conformance record (`docs/DRIVER-CONTRACT-STATUS.md`). No API or
+  behaviour changes.
+
 ## 0.1.0-alpha.4 - 2026-10-24
 
 - Both packages now target `net10.0` and `net11.0` (driver, IBMCompat and tests; CI, publish and dry-run workflows install .NET 10.0.112 and 11.0.100-rc.2; SBOM/package-contents allowlist and docs updated). Building `net11.0` requires the .NET 11 SDK.
