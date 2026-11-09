@@ -13,4 +13,5 @@ internal static class Db2ProtocolLimits
     internal const int MaxMaterializedLobBytes = 16 * 1024 * 1024;
     internal const long MaxMaterializedResultBytes = 32L * 1024 * 1024;
     internal const long MaxStreamedLobBytes = 1024L * 1024 * 1024;
+    internal const int LobChunkBytes = 64 * 1024;
 }

@@ -64,8 +64,8 @@ public sealed class Db2LobValue
         }
         // Read in bounded chunks. Unknown or inaccurate locator lengths must not
         // let GetValue grow a result buffer beyond the materialization budget.
-        using var value = new MemoryStream(capacity: (int)Math.Min(ByteLength ?? 0, 65536));
-        var buffer = new byte[64 * 1024];
+        using var value = new MemoryStream(capacity: (int)Math.Min(ByteLength ?? 0, Db2ProtocolLimits.LobChunkBytes));
+        var buffer = new byte[Db2ProtocolLimits.LobChunkBytes];
         while (true)
         {
             var remaining = MaxMaterializedBytes + 1 - (int)value.Length;

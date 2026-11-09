@@ -18,5 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="Fixtures/Drda/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures/JDC/**/*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
