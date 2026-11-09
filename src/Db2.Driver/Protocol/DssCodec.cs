@@ -175,17 +175,25 @@ internal static class DssCodec
         {
             if (encodedLength < 4) throw new InvalidDataException($"Invalid DDM object length: {encodedLength}.");
             if (encodedLength > data.Length) throw new InvalidDataException($"DDM object length {encodedLength} exceeds DSS frame payload capacity {data.Length}.");
-            return (codePoint, 4, encodedLength - 4);
+            var length = encodedLength - 4;
+            EnsureDdmObjectLimit(length);
+            return (codePoint, 4, length);
         }
         var extensionLength = (encodedLength & 0x7fff) - 4;
-        if (extensionLength == 0) return (codePoint, 4, data.Length - 4);
+        if (extensionLength == 0)
+        {
+            EnsureDdmObjectLimit(data.Length - 4);
+            return (codePoint, 4, data.Length - 4);
+        }
         if (extensionLength < 0 || extensionLength > 8 || 4 + extensionLength > data.Length)
             throw new InvalidDataException($"Invalid DDM extended length field 0x{encodedLength:X4}.");
         ulong contentLength = 0;
         for (var i = 0; i < extensionLength; i++) contentLength = (contentLength << 8) | data[4 + i];
         var available = data.Length - 4 - extensionLength;
         if (contentLength > (ulong)available) throw new InvalidDataException($"DDM extended length {contentLength} exceeds DSS payload {available}.");
-        return (codePoint, 4 + extensionLength, checked((int)contentLength));
+        var content = checked((int)contentLength);
+        EnsureDdmObjectLimit(content);
+        return (codePoint, 4 + extensionLength, content);
     }
 
     public static async ValueTask<DssPacket> ReadAsync(Stream stream, CancellationToken cancellationToken = default)
@@ -202,6 +210,7 @@ internal static class DssCodec
         var firstLength = length & ~ContinuationFlag;
         if (firstLength < 6) throw new InvalidDataException($"Invalid DSS frame length {firstLength}: less than header size 6.");
         var bodyLength = firstLength - 6;
+        EnsureDssLimit(bodyLength);
         var buffer = ArrayPool<byte>.Shared.Rent(bodyLength);
         try
         {
@@ -223,6 +232,7 @@ internal static class DssCodec
                 int needed;
                 try { needed = checked(bodyLength + segmentLength); }
                 catch (OverflowException error) { throw new InvalidDataException("DSS continued object exceeds the supported buffer length.", error); }
+                EnsureDssLimit(needed);
                 if (needed > Array.MaxLength)
                     throw new InvalidDataException("DSS continued object exceeds the supported buffer length.");
                 if (needed > buffer.Length)
@@ -255,5 +265,19 @@ internal static class DssCodec
         var bytes = new byte[GetEncodedLength(ddmObject.Length)];
         WriteSegments(ddmObject, bytes, (byte)(Reply | (chained ? ChainedFlag : 0)), correlationId);
         return bytes;
+    }
+
+    private static void EnsureDssLimit(int length)
+    {
+        if (length > Db2ProtocolLimits.MaxDssSize)
+            throw new Db2ResourceLimitException(
+                $"DB2 DSS payload of {length} bytes exceeds the {Db2ProtocolLimits.MaxDssSize}-byte limit.");
+    }
+
+    private static void EnsureDdmObjectLimit(int length)
+    {
+        if (length > Db2ProtocolLimits.MaxDdmObjectSize)
+            throw new Db2ResourceLimitException(
+                $"DB2 DDM object of {length} bytes exceeds the {Db2ProtocolLimits.MaxDdmObjectSize}-byte limit.");
     }
 }

@@ -64,7 +64,9 @@ public sealed class ConfigTests
         Assert.Equal(30_000d, Db2Config.Parse("db2://u:p@host/TESTDB?timeout=abc").Timeout.TotalMilliseconds);
         Assert.Equal(50000, Db2Config.Parse("db2://u:p@host/TESTDB?port=abc").Port);
         Assert.Equal(50000, Db2Config.Parse("db2://u:p@host/TESTDB?port=70000").Port);
-        Assert.Equal(65_535, Db2Config.Parse("db2://u:p@host/TESTDB?block_size=512").BlockSize);
+        Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse("db2://u:p@host/TESTDB?block_size=512"));
+        Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse("db2://u:p@host/TESTDB?block_size=abc"));
+        Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse("Database=TESTDB;block_size=1048577"));
 
         var kv = Db2Config.Parse("Database=TESTDB;Host=h;Port=50001;UID=u;PWD=p");
         Assert.Equal(("h", 50001, "u", "p"), (kv.Host, kv.Port, kv.User, kv.Password));

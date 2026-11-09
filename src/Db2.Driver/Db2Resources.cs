@@ -1,3 +1,5 @@
+using JustyBase.Db2.Protocol;
+
 namespace JustyBase.Db2;
 
 /// <summary>A shared quota reserved before writes, never by probing free disk space.</summary>
@@ -28,7 +30,7 @@ internal sealed class Db2ResourceBudget
 /// <summary>Private, bounded spool owned by one row/LOB; asynchronous disposal releases disk first.</summary>
 internal sealed class Db2LobSpool : IAsyncDisposable
 {
-    internal const long MaxValueBytes = 1024L * 1024 * 1024;
+    internal const long MaxValueBytes = Db2ProtocolLimits.MaxStreamedLobBytes;
     private readonly string _directory;
     private readonly Db2ResourceBudget _budget;
     private long _reserved;

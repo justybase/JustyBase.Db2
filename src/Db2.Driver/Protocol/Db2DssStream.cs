@@ -19,7 +19,7 @@ internal sealed class Db2DssStream
     private Db2DssStream(Stream stream, DssHeader header, int remaining, bool continued, long limit)
         => (_stream, Header, _segmentRemaining, _continued, _limit) = (stream, header, remaining, continued, limit);
 
-    public static async Task<Db2DssStream> OpenAsync(Stream stream, long maxPayloadBytes = 1024L * 1024 * 1024, CancellationToken token = default)
+    public static async Task<Db2DssStream> OpenAsync(Stream stream, long maxPayloadBytes = Db2ProtocolLimits.MaxDssSize, CancellationToken token = default)
     {
         if (maxPayloadBytes < 1) throw new ArgumentOutOfRangeException(nameof(maxPayloadBytes));
         var raw = new byte[6]; await stream.ReadExactlyAsync(raw, token).ConfigureAwait(false);

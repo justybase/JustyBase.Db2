@@ -15,7 +15,7 @@ public sealed record Db2PoolOptions(int MaxConnections = 10)
     public TimeSpan ReapInterval { get; init; } = TimeSpan.FromSeconds(30);
     internal void Validate()
     {
-        if (MaxConnections < 1 || MaxWaiters < 1) throw new ArgumentOutOfRangeException(nameof(MaxConnections), "Pool capacities must be positive integers.");
+        if (MaxConnections < 1 || MaxWaiters < 0) throw new ArgumentOutOfRangeException(nameof(MaxConnections), "Pool maxConnections must be positive and maxWaiters must be non-negative.");
         foreach (var value in new[] { AcquireTimeout, ConnectTimeout, IdleTimeout, MaxLifetime, ReapInterval })
             if (value <= TimeSpan.Zero || value.TotalMilliseconds > uint.MaxValue - 1) throw new ArgumentOutOfRangeException(nameof(AcquireTimeout), "Pool intervals must be positive and timer-compatible.");
     }
@@ -35,6 +35,8 @@ public sealed class Db2Pool : IAsyncDisposable
     private readonly CancellationTokenSource _closedSignal = new();
     private readonly TaskCompletionSource _closeCompletion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private int _sessionCount;
+    private long _discardedSessions;
+    private long _acquireTimeouts;
     private int _closed;
 
     public Db2Pool(string dsn, Db2PoolOptions? options = null)
@@ -60,6 +62,16 @@ public sealed class Db2Pool : IAsyncDisposable
 
     public int WaitingCount => _slots.WaitingCount;
     public int ActiveSessionCount => _active.Count;
+    /// <summary>Physical sessions discarded instead of returned to the idle list.</summary>
+    public long DiscardedSessionCount => Interlocked.Read(ref _discardedSessions);
+    /// <summary>Pool acquires that hit the acquire deadline.</summary>
+    public long AcquireTimeoutCount => Interlocked.Read(ref _acquireTimeouts);
+
+    private void RecordDiscard()
+    {
+        Interlocked.Increment(ref _discardedSessions);
+        Db2Diagnostics.Discard();
+    }
 
     private bool Expired(Db2Session session, bool includeIdle)
     {
@@ -84,7 +96,7 @@ public sealed class Db2Pool : IAsyncDisposable
             }
             foreach (var session in expired)
             {
-                _times.TryRemove(session, out _); Db2Diagnostics.Discard();
+                _times.TryRemove(session, out _); RecordDiscard();
                 try { await session.DisposeAsync().ConfigureAwait(false); } catch { }
             }
         }
@@ -134,7 +146,12 @@ public sealed class Db2Pool : IAsyncDisposable
         var acquireStarted = Stopwatch.GetTimestamp();
         using var activity = Db2Diagnostics.Begin("acquire");
         try { await _slots.AcquireAsync(_options.AcquireTimeout, cancellationToken).ConfigureAwait(false); }
-        catch { Db2Diagnostics.Record("acquire", acquireStarted, false); throw; }
+        catch (Exception error)
+        {
+            if (error is Db2PoolTimeoutException) Interlocked.Increment(ref _acquireTimeouts);
+            Db2Diagnostics.Record("acquire", acquireStarted, false);
+            throw;
+        }
         Db2Diagnostics.Record("acquire", acquireStarted, true);
         Db2Session? session = null;
         try
@@ -154,7 +171,7 @@ public sealed class Db2Pool : IAsyncDisposable
             if (broken is not null) foreach (var candidate in broken)
             {
                 _times.TryRemove(candidate, out _);
-                Db2Diagnostics.Discard();
+                RecordDiscard();
                 try { await candidate.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception error) { brokenDisposalError ??= error; }
             }
@@ -242,7 +259,7 @@ public sealed class Db2Pool : IAsyncDisposable
             if (dispose)
             {
                 _times.TryRemove(session, out _);
-                Db2Diagnostics.Discard();
+                RecordDiscard();
                 try { await session.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception disposeError)
                 {
@@ -370,20 +387,34 @@ public sealed class Db2Pool : IAsyncDisposable
     }
 
     public async Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, CancellationToken cancellationToken = default)
-        => await ExecuteBatchCoreAsync(sql, parameterSets, null, cancellationToken).ConfigureAwait(false);
+        => await ExecuteBatchCoreAsync(sql, parameterSets, null, null, cancellationToken).ConfigureAwait(false);
 
     public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions options, CancellationToken cancellationToken = default) =>
-        ExecuteBatchCoreAsync(sql, parameterSets, options, cancellationToken);
+        ExecuteBatchCoreAsync(sql, parameterSets, options, null, cancellationToken);
 
-    private async Task<long> ExecuteBatchCoreAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions? options, CancellationToken cancellationToken)
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, CancellationToken cancellationToken = default) =>
+        ExecuteBatchCoreAsync(sql, parameterSets, null, batchOptions, cancellationToken);
+
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions options, CancellationToken cancellationToken = default) =>
+        ExecuteBatchCoreAsync(sql, parameterSets, options, batchOptions, cancellationToken);
+
+    private async Task<long> ExecuteBatchCoreAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions? options, Db2BatchOptions? batchOptions, CancellationToken cancellationToken)
     {
+        batchOptions?.Validate();
+        options?.Validate();
         var operationStarted = false;
         try
         {
             return await WithSessionAsync((session, token) =>
             {
                 operationStarted = true;
-                return options is null ? session.ExecuteBatchAsync(sql, parameterSets, token) : session.ExecuteBatchAsync(sql, parameterSets, options, token);
+                return (options, batchOptions) switch
+                {
+                    (null, null) => session.ExecuteBatchAsync(sql, parameterSets, token),
+                    (not null, null) => session.ExecuteBatchAsync(sql, parameterSets, options, token),
+                    (null, not null) => session.ExecuteBatchAsync(sql, parameterSets, batchOptions, token),
+                    _ => session.ExecuteBatchAsync(sql, parameterSets, batchOptions!, options!, token),
+                };
             }, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested && !operationStarted)

@@ -1,4 +1,5 @@
 using System.Text;
+using JustyBase.Db2.Protocol;
 
 namespace JustyBase.Db2;
 
@@ -8,7 +9,7 @@ namespace JustyBase.Db2;
 /// </summary>
 public sealed class Db2LobValue
 {
-    private const int MaxMaterializedBytes = 16 * 1024 * 1024;
+    private const int MaxMaterializedBytes = Db2ProtocolLimits.MaxMaterializedLobBytes;
     private readonly Func<Stream> _openStream;
     private readonly Encoding? _textEncoding;
     private readonly object _sync = new();

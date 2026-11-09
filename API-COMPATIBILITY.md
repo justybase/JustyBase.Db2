@@ -19,7 +19,7 @@ The SDK package validation (`EnablePackageValidation`) runs on every pack. There
 
 | Namespace | Assembly | Status |
 | --- | --- | --- |
-| `JustyBase.Db2` | `JustyBase.Db2` | Native API: `Db2Config`, `Db2Session`, `Db2Pool`, results, errors, `Db2ColumnMetadata`. |
+| `JustyBase.Db2` | `JustyBase.Db2` | Native API: `Db2Config`, `Db2Session`, `Db2Pool`, `Db2BatchOptions`, results, errors, `Db2ColumnMetadata`. |
 | `JustyBase.Db2.AdoNet` | `JustyBase.Db2` | ADO.NET provider: connection, command, reader, transaction, parameters, importer. |
 | `JustyBase.Db2.Types` | `JustyBase.Db2` | `SqlType` codes and `SqlTypeNames` helpers used by `Db2ColumnMetadata.SqlType`. |
 | `IBM.Data.Db2` | `JustyBase.Db2.IBMCompat` | Source-compatible facade for migrations. Separate package, separate snapshot. |
@@ -30,7 +30,7 @@ Protocol, DRDA/DDM encoding, converters, packet types and Kerberos/SECMEC intern
 
 | Tier | Surface | Alpha policy |
 | --- | --- | --- |
-| Supported alpha | `Db2Config`, `Db2Session`, `Db2Pool`, structured errors, `Db2ColumnMetadata`, typed values, the ADO.NET provider | Changes must be deliberate, documented in the CHANGELOG and reflected in the snapshot. |
+| Supported alpha | `Db2Config`, `Db2Session`, `Db2Pool`, `Db2BatchOptions`, structured errors, `Db2ColumnMetadata`, typed values, the ADO.NET provider | Changes must be deliberate, documented in the CHANGELOG and reflected in the snapshot. |
 | Experimental | `IBM.Data.Db2` source-compatibility facade and IBM-shaped bulk-copy helpers | May change between alpha releases; gaps are listed in the migration guide. |
 
 Before 1.0, Semantic Versioning permits breaking changes through minor-version changes. `0.1.0-alpha.4` is intentionally not presented as a stable contract.

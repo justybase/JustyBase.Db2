@@ -6,10 +6,8 @@ namespace JustyBase.Db2.Protocol;
 /// <summary>Serialized session reader. Packet adapters own their payload; buffer slices do not escape.</summary>
 internal sealed class DssReadBuffer : IDisposable
 {
-    // Bounded transport state, matching the TS/Rust guards with superset values so
-    // any chain those ports accept is accepted here too (TS 2048/512 MiB, Rust 4096/256 MiB).
-    internal const int MaxReplyChainPackets = 4096;
-    internal const long MaxReplyChainBytes = 512L * 1024 * 1024;
+    internal const int MaxReplyChainPackets = Db2ProtocolLimits.MaxReplyChainPackets;
+    internal const long MaxReplyChainBytes = Db2ProtocolLimits.MaxReplyChainBytes;
 
     private readonly Stream _stream;
     private readonly object _lifetimeGate = new();
@@ -200,6 +198,7 @@ internal sealed class DssReadBuffer : IDisposable
         if (firstLength < 6) throw new InvalidDataException($"Invalid DSS frame length {firstLength}: less than header size 6.");
         _position += 6;
         var bodyLength = firstLength - 6;
+        EnsureDssLimit(bodyLength);
         await EnsureAsync(bodyLength, token).ConfigureAwait(false);
         var continued = (length & 0x8000) != 0;
 #if DB2_PERF_COUNTERS
@@ -226,6 +225,7 @@ internal sealed class DssReadBuffer : IDisposable
                 .CopyTo(_buffer.AsSpan(_position + bodyLength));
             _filled -= 2;
             bodyLength = CheckedLength(bodyLength, segment - 2);
+            EnsureDssLimit(bodyLength);
         }
         var slice = DssCodec.ReadDdmSlice(_buffer.AsSpan(_position, bodyLength));
 #if DB2_PERF_COUNTERS
@@ -283,6 +283,13 @@ internal sealed class DssReadBuffer : IDisposable
         var length = (long)current + addition;
         if (length > Array.MaxLength) throw new InvalidDataException("DSS continued object exceeds the supported buffer length.");
         return (int)length;
+    }
+
+    private static void EnsureDssLimit(int length)
+    {
+        if (length > Db2ProtocolLimits.MaxDssSize)
+            throw new Db2ResourceLimitException(
+                $"DB2 DSS payload of {length} bytes exceeds the {Db2ProtocolLimits.MaxDssSize}-byte limit.");
     }
 
     public void Dispose()

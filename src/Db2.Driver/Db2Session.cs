@@ -209,8 +209,8 @@ public sealed class Db2Transaction : IAsyncDisposable
 /// <summary>A serialized native DRDA session over TCP or TLS.</summary>
 public sealed partial class Db2Session : IAsyncDisposable
 {
-    private const int MaxMaterializedLobBytes = 16 * 1024 * 1024;
-    private const long MaxMaterializedResultBytes = 32L * 1024 * 1024;
+    private const int MaxMaterializedLobBytes = Db2ProtocolLimits.MaxMaterializedLobBytes;
+    private const long MaxMaterializedResultBytes = Db2ProtocolLimits.MaxMaterializedResultBytes;
     private const string PackageId = "SYSSH200";
     private const string ConsistencyToken = "SYSLVL01";
     private const ushort SectionNumber = 65;
@@ -1126,18 +1126,35 @@ public sealed partial class Db2Session : IAsyncDisposable
 
     /// <summary>Executes parameter sets sequentially and reports confirmed partial progress if a set fails.</summary>
     public async Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, CancellationToken cancellationToken = default)
-        => await ExecuteBatchCoreAsync(sql, parameterSets, null, cancellationToken).ConfigureAwait(false);
+        => await ExecuteBatchCoreAsync(sql, parameterSets, null, null, cancellationToken).ConfigureAwait(false);
 
     /// <summary>Executes a batch under a command deadline while retaining confirmed partial-progress diagnostics.</summary>
     public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions options, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options); options.Validate();
-        return ExecuteBatchCoreAsync(sql, parameterSets, options, cancellationToken);
+        return ExecuteBatchCoreAsync(sql, parameterSets, options, null, cancellationToken);
     }
 
-    private async Task<long> ExecuteBatchCoreAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions? options, CancellationToken cancellationToken)
+    /// <summary>Executes a batch bounded by the JDC row/byte limits.</summary>
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(batchOptions); batchOptions.Validate();
+        return ExecuteBatchCoreAsync(sql, parameterSets, null, batchOptions, cancellationToken);
+    }
+
+    /// <summary>Executes a batch bounded by row/byte limits and a command deadline.</summary>
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(batchOptions); batchOptions.Validate();
+        ArgumentNullException.ThrowIfNull(options); options.Validate();
+        return ExecuteBatchCoreAsync(sql, parameterSets, options, batchOptions, cancellationToken);
+    }
+
+    private async Task<long> ExecuteBatchCoreAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions? options, Db2BatchOptions? batchOptions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(parameterSets);
+        batchOptions ??= new Db2BatchOptions();
+        batchOptions.Validate();
         if (parameterSets.Count == 0) return 0;
         long affected = 0;
         var completed = 0;
@@ -1152,8 +1169,25 @@ public sealed partial class Db2Session : IAsyncDisposable
                 catch (OperationCanceledException) { throw; }
                 catch (Exception error) { throw new Db2BatchExecutionException(null, 0, 0, error); }
 
+                var chunkRows = 0;
+                long chunkBytes = 0;
                 foreach (var parameters in parameterSets)
                 {
+                    // The native path sends one set per request, so it is already
+                    // bounded by one row; track the JDC chunk limits for callers
+                    // that pipeline or estimate progress.
+                    var rowBytes = Db2BatchSizing.EstimateEncodedBytes(parameters);
+                    if (chunkRows > 0
+                        && (chunkRows >= batchOptions.MaxRows
+                            || rowBytes > batchOptions.MaxEncodedBytes - chunkBytes))
+                    {
+                        chunkRows = 0;
+                        chunkBytes = 0;
+                    }
+                    chunkRows++;
+                    chunkBytes = rowBytes > batchOptions.MaxEncodedBytes
+                        ? batchOptions.MaxEncodedBytes
+                        : chunkBytes + rowBytes;
                     inFlight = completed;
                     long currentAffected;
                     try { currentAffected = await ExecutePreparedLockedAsync(statement, parameters, token, alreadyPrepared: true, sourceReadCancellationToken: sourceReadToken).ConfigureAwait(false); }

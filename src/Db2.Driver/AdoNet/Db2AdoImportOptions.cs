@@ -3,8 +3,8 @@ namespace JustyBase.Db2.AdoNet;
 /// <summary>Controls batching, progress, and commit boundaries for a bounded-memory import.</summary>
 public sealed record Db2AdoImportOptions
 {
-    /// <summary>Maximum number of source rows in one multi-row INSERT. Defaults to 128.</summary>
-    public int BatchSize { get; init; } = 128;
+    /// <summary>Maximum number of source rows in one multi-row INSERT. Defaults to 256.</summary>
+    public int BatchSize { get; init; } = 256;
 
     /// <summary>Approximate maximum encoded value bytes retained in a batch. Defaults to 8 MiB.</summary>
     public long MaxBatchBytes { get; init; } = 8 * 1024 * 1024;

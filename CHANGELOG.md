@@ -22,6 +22,13 @@
   the session closed, and the pool reset restores the configured schema. An
   explicit empty schema is rejected. API snapshot regenerated for the additive
   members.
+- Aligned resource limits with JDC: abuse caps are now 64 MiB DSS, 64 MiB DDM,
+  256 MiB / 4096-packet reply chains, and `block_size` outside 1024..1048576 is
+  rejected with a configuration error. Added `Db2BatchOptions` (256 rows / 8 MiB
+  defaults), changed the ADO import default batch size to 256, and exposed
+  `DiscardedSessionCount`/`AcquireTimeoutCount`; `maxWaiters` now accepts zero.
+  API snapshot regenerated for the additive members.
+
 ## 0.1.0-alpha.4 - 2026-10-24
 
 - Both packages now target `net10.0` and `net11.0` (driver, IBMCompat and tests; CI, publish and dry-run workflows install .NET 10.0.112 and 11.0.100-rc.2; SBOM/package-contents allowlist and docs updated). Building `net11.0` requires the .NET 11 SDK.

@@ -1,7 +1,7 @@
 # JDC v1 status — C# (.NET)
 
 Contract: [`docs/DRIVER-CONTRACT.md`](DRIVER-CONTRACT.md) (JDC v1).
-Last reviewed: 2026-11-08.
+Last reviewed: 2026-11-09.
 
 This file is the repo-specific conformance record. It is not part of the
 normative text. `compliant` means every `MUST` in the group is met; `partial`
@@ -13,9 +13,9 @@ pass; this file records them, it does not waive the requirement.
 
 | Status | Requirements |
 | --- | --- |
-| compliant | ERR-02–09, OUT-01, OUT-06–09, DSN-01, DSN-04–06, DSN-08–10, LIM-03–06, POOL-01–06, SES-01–03, SES-07–10, VAL-01–10, CAN-01–09, BAT-01, BAT-03–04, BAT-06–09 |
-| partial | ERR-01, OUT-02–05, DSN-07, LIM-01, LIM-08 |
-| gap | DSN-02–03, LIM-02, LIM-07, POOL-07, SES-04–06, BAT-02, BAT-05 |
+| compliant | ERR-02-09, OUT-01, OUT-06-09, DSN-01-06, DSN-08-10, LIM-01-08, POOL-01-07, SES-01-10, VAL-01-10, CAN-01-09, BAT-01-09 |
+| partial | ERR-01, OUT-02-05, DSN-07 |
+| gap | — |
 
 ## Details
 
@@ -32,20 +32,20 @@ pass; this file records them, it does not waive the requirement.
 | OUT-08 | compliant | A batch wrapper reports `confirmed` for a server-confirmed cause, `not-started` for a pre-write cause and `unknown` when the failing set may have executed. |
 | OUT-09 | compliant | A confirmed `-952` produces `OperationCancelled` with `Confirmed`; unconfirmed settlement is `Unknown`. |
 | DSN-01 | compliant | Case-insensitive key/value and `db2://` forms; last value wins. |
-| DSN-02–03 | gap | `currentschema`/`current_schema` is not accepted and there is no current-schema setter/getter on the native session. All other core aliases are present. |
+| DSN-02–03 | compliant | Every JDC canonical key and alias is accepted, including `currentschema`/`current_schema`, `kerberos_spn`, the principal aliases and the Kerberos file keys. The schema is validated before I/O, applied with a quoted identifier after connect, exposed by `Db2Session.CurrentSchema`, and restored by the pool reset path. |
 | DSN-04–06 | compliant | Security mechanisms 0/3/7/9/11, TLS keys and `authentication=` shorthand behave as required. |
 | DSN-07 | partial | No protocol-limit keys; the status text documents that they are not exposed. The SHOULD for LOB/streamed limits is not met. |
 | DSN-08–10 | compliant | Unknown Kerberos keys fail closed; required identity values are checked before I/O; configuration dumps, if any, do not include the password. |
-| LIM-01 | partial | Protocol limits are constants; `block_size` outside 1024..1048576 is ignored rather than rejected. |
-| LIM-02 | gap | DSS 1 GiB, DDM object 512 MiB and reply chain 512 MiB exceed the JDC defaults (64 MiB / 64 MiB / 256 MiB). LOB 16 MiB, result 32 MiB, packets 4096, streamed 1 GiB and 64 KiB chunks match. |
-| LIM-03 | compliant | Constants are within the hard ceilings; there are no configurable values to clamp. |
-| LIM-04–06 | compliant | Materialized LOB/result limits fail closed; reply-chain caps reject the chain. |
-| LIM-07 | gap | `ExecuteBatchAsync` has no row/byte bound; import staging is bounded. |
-| LIM-08 | partial | A process-wide spool budget exists and is released on all paths; it is not publicly configurable. |
-| POOL-01–06 | compliant | Defaults, admission errors, reset/discard and drain/shutdown match the contract. |
-| POOL-07 | gap | Public counters cover total/idle/active/waiting only; discarded sessions and acquire timeouts are not exposed. |
+| LIM-01 | compliant | Protocol limits are fixed JDC defaults with documented hard ceilings in `Db2ProtocolLimits`; invalid `block_size` values are rejected with a configuration error instead of ignored. |
+| LIM-02 | compliant | DSS 64 MiB, DDM object 64 MiB, reply chain 256 MiB / 4096 packets, LOB 16 MiB, result 32 MiB, streamed 1 GiB and 64 KiB chunks match JDC. |
+| LIM-03 | compliant | The fixed values are within the hard ceilings; there are no configurable values to clamp. |
+| LIM-04-06 | compliant | Materialized LOB/result limits fail closed; DSS/DDM/reply-chain caps reject the chain and discard the session. |
+| LIM-07 | compliant | `Db2BatchOptions` bounds a batch chunk by rows and estimated encoded bytes; import staging is bounded by the same defaults. |
+| LIM-08 | compliant | The process-wide 10 GiB spool budget is reserved before use and released on success, error and cancellation. |
+| POOL-01-06 | compliant | Defaults, admission errors, reset/discard and drain/shutdown match the contract; `maxWaiters` accepts zero. |
+| POOL-07 | compliant | `SessionCount`, `IdleSessionCount`, `ActiveSessionCount`, `WaitingCount`, `DiscardedSessionCount` and `AcquireTimeoutCount` are monotonic for the pool lifetime. |
 | SES-01–03 | compliant | Connect/close, prepare/execute and commit/rollback behave as required; close does not commit. |
-| SES-04–06 | gap | `ChangeDatabase` exists only on the ADO.NET connection; the native `Db2Session` has no `change_database`, current-schema setter or getter. |
+| SES-04–06 | compliant | The native `Db2Session` exposes `ChangeDatabaseAsync`, `SetCurrentSchemaAsync` and `CurrentSchema`. Name/schema validation happens before I/O, a change is refused during a transaction or on a pooled lease, and a failed reconnect leaves the session closed. |
 | SES-07 | compliant | Isolation is transaction-scoped (`BeginTransactionAsync(isolation)`), which restores the previous register at the end. |
 | SES-08–10 | compliant | Transaction state is per session; batch order/progress and cancellation tokens are supported. |
 | VAL-01–10 | compliant | Native rows use exact strings; the ADO adapter may return `decimal`/`DateTime` for supported precisions. NULL, binary, CP500 and metadata rules are met. |
@@ -55,7 +55,7 @@ pass; this file records them, it does not waive the requirement.
 | CAN-08 | compliant | A command/connect deadline raises `Timeout`; the outcome is `Confirmed` when SQLINTR produced `-952`, `Unknown` after a flush and `NotStarted` before any request was written. |
 | CAN-09 | compliant | Cancellation is callable while the operation lock is held; confirmed `-952` leaves the session reusable. |
 | BAT-01 | compliant | Ordered execution, stop-on-first-failure and completed/affected counts. |
-| BAT-02 | gap | `ExecuteBatchAsync` has no bounded option type. |
-| BAT-03–04 | compliant | Batch cause/progress preservation; ADO import supports atomic vs commit-per-batch and atomic-only table lock. |
-| BAT-05 | gap | Import default `BatchSize` is 128, JDC requires 256; the other import defaults match. |
+| BAT-02 | compliant | `Db2BatchOptions` defaults to 256 rows / 8 MiB, validates `MaxRows` in 1..32767 and treats the byte limit as soft. The native path sends one set per request, which is stricter than the chunk bound. |
+| BAT-03-04 | compliant | Batch cause/progress preservation; ADO import supports atomic vs commit-per-batch and atomic-only table lock. |
+| BAT-05 | compliant | Import defaults are 256 rows, 8 MiB staged bytes, progress every 10,000 rows, atomic policy and table lock off. |
 | BAT-06–09 | compliant | 1 GiB streamed budget, 64 KiB chunks, progressive LOB cancel, fail-closed materialization and the 1 GiB checksum workload are implemented. |

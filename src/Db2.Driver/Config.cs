@@ -192,7 +192,11 @@ public sealed class Db2Config
             case "ssl_client_cert_path": case "ssl_client_cert": case "sslcert": case "cert": c.SslClientCertPath = value; c.UseSsl = true; break;
             case "ssl_client_key_path": case "ssl_client_key": case "sslkey": case "key": c.SslClientKeyPath = value; c.UseSsl = true; break;
             case "timeout": case "connect_timeout": if (TryParseDuration(value, out var timeout)) c.Timeout = timeout; break;
-            case "block_size": case "blocksize": case "qryblksz": if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var size) && size is >= 1024 and <= 1048576) c.BlockSize = size; break;
+            case "block_size": case "blocksize": case "qryblksz":
+                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var size) || size is < 1024 or > 1048576)
+                    throw new Db2ConfigurationException("DB2 block_size must be an integer between 1024 and 1048576.");
+                c.BlockSize = size;
+                break;
             case "security_mechanism": case "secmec": case "auth_mechanism": case "auth":
                 if (!TryParseSecurityMechanism(value, out var secmec)) throw UnsupportedAuthentication(value);
                 c.SecurityMechanism = secmec;

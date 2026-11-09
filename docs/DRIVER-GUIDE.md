@@ -37,7 +37,7 @@ The pool bounds physical sessions and pending admission. It supports acquire/con
 
 When a lease returns, the driver validates relevant server session state and restores observed changes where supported. This prevents schema/isolation/client identity state from leaking between callers.
 
-If reset cannot be proven successful, the session is discarded instead of reused.
+If reset cannot be proven successful, the session is discarded instead of reused. `DiscardedSessionCount` and `AcquireTimeoutCount` expose the two monotonic counters JDC POOL-07 requires, alongside the existing session/idle/active/waiting counts.
 
 The native session exposes `SetCurrentSchemaAsync`/`CurrentSchema` and `ChangeDatabaseAsync`. A database switch validates the target before I/O, is refused while a transaction is active or on a pooled lease, and leaves the session closed if the reconnect fails. The configured `currentschema` is applied at connect and restored by the pool reset.
 
@@ -56,7 +56,11 @@ The current alpha limits:
 - one materialized LOB to 16 MiB,
 - one materialized query result to 32 MiB.
 
-Values beyond those limits fail instead of allocating without bound.
+Values beyond those limits fail instead of allocating without bound. Protocol abuse caps are fixed at the JDC defaults (64 MiB DSS, 64 MiB DDM, 256 MiB / 4096-packet reply chain); they are documented in `Db2ProtocolLimits` and are not DSN-tunable in this driver.
+
+### Bounded batches
+
+`Db2Session.ExecuteBatchAsync` and `Db2Pool.ExecuteBatchAsync` accept `Db2BatchOptions` with `MaxRows` (default 256, valid 1..32767) and `MaxEncodedBytes` (default 8 MiB). The byte limit is soft: one oversized set is sent alone. The native path sends one parameter set per request, so the wire request is stricter than the chunk bound.
 
 ### Progressive locator reads
 

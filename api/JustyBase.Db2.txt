@@ -246,6 +246,15 @@ type class JustyBase.Db2.Db2BatchExecutionException
   System.Int64 RowsAffected { get; }
   System.Nullable<System.Int32> SqlCode { get; }
   System.String SqlState { get; }
+type class JustyBase.Db2.Db2BatchOptions
+  .ctor()
+  JustyBase.Db2.Db2BatchOptions <Clone>$()
+  System.Boolean Equals(JustyBase.Db2.Db2BatchOptions other)
+  System.Boolean Equals(System.Object obj)
+  System.Int32 GetHashCode()
+  System.String ToString()
+  System.Int64 MaxEncodedBytes { get;init; }
+  System.Int32 MaxRows { get;init; }
 type class JustyBase.Db2.Db2BlobStream
   .ctor(System.IO.Stream Source, System.Int64 Length, System.Boolean LeaveOpen)
   JustyBase.Db2.Db2BlobStream <Clone>$()
@@ -468,11 +477,15 @@ type class JustyBase.Db2.Db2Pool
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2BatchOptions batchOptions, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2BatchOptions batchOptions, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<T> WithSessionAsync`1(System.Func<JustyBase.Db2.Db2Session, System.Threading.CancellationToken, System.Threading.Tasks.Task<T>> operation, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.ValueTask DisposeAsync()
+  System.Int64 AcquireTimeoutCount { get; }
   System.Int32 ActiveSessionCount { get; }
+  System.Int64 DiscardedSessionCount { get; }
   System.Int32 IdleSessionCount { get; }
   System.Boolean IsClosed { get; }
   System.Int32 SessionCount { get; }
@@ -578,6 +591,8 @@ type class JustyBase.Db2.Db2Session
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2BatchOptions batchOptions, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2BatchOptions batchOptions, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<System.Int64> ExecuteBatchAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<System.Object>> parameterSets, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.ValueTask DisposeAsync()
