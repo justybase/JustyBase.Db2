@@ -16,7 +16,10 @@ A release-candidate revision is expected to pass:
 - the complete offline .NET/unit/protocol suite,
 - live TCP protocol checks against Db2,
 - TLS behavior,
-- IBM-provider parity checks for selected values and operations,
+- IBM-provider parity checks for value shapes (numeric boundaries,
+  BOOLEAN/REAL/DOUBLE, finite and special DECFLOAT, text/binary, temporal,
+  empty vs NULL LOBs), typed and conversion parameter matrices, LOB/XML
+  parameters, SQLCODE/SQLSTATE error classes, and both ADO.NET API paths,
 - cancellation / SQL interrupt scenarios,
 - **1 GiB** streamed BLOB checksum verification,
 - bounded RSS and spool usage,

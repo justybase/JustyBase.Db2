@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Expanded the IBM-provider parity suite to numeric boundaries,
+  BOOLEAN/REAL/DOUBLE, finite and special DECFLOAT, text/binary, temporal
+  boundaries, empty vs NULL LOBs, typed and conversion parameter matrices,
+  LOB/XML parameters, six SQLCODE/SQLSTATE error classes, and the synchronous
+  ADO.NET API alongside the async path.
 - Added the self-contained JDC v1 contract (`docs/DRIVER-CONTRACT.md`) and the
   repo-specific conformance record (`docs/DRIVER-CONTRACT-STATUS.md`). No API or
   behaviour changes.
