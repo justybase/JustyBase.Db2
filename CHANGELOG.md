@@ -26,8 +26,19 @@
   256 MiB / 4096-packet reply chains, and `block_size` outside 1024..1048576 is
   rejected with a configuration error. Added `Db2BatchOptions` (256 rows / 8 MiB
   defaults), changed the ADO import default batch size to 256, and exposed
-  `DiscardedSessionCount`/`AcquireTimeoutCount`; `maxWaiters` now accepts zero.
-  API snapshot regenerated for the additive members.
+  `DiscardedSessionCount`/`AcquireTimeoutCount`; `maxWaiters` now accepts zero
+  from both the native options and ADO connection strings. Reply-chain limits
+  are enforced on the owned-packet reader too and report
+  `Db2ResourceLimitException` on overflow. API snapshot regenerated for the
+  additive members.
+- `Db2Session.ExecuteBatchAsync`/`Db2Pool.ExecuteBatchAsync` now expose one
+  batch-options overload with an optional command-options argument. The removed
+  `(batchOptions, CancellationToken)` overload made an explicit `null` options
+  argument ambiguous; the combined overload keeps the same behaviour and the
+  API snapshot records the intentional shape. Callers that previously passed a
+  token positionally with batch options can use `cancellationToken: token`.
+- `ChangeDatabaseAsync` applies the open-session, active-transaction and pooled
+  lease checks before treating a same-name switch as a no-op.
 
 ## 0.1.0-alpha.4 - 2026-10-24
 

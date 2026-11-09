@@ -45,7 +45,7 @@ pass; this file records them, it does not waive the requirement.
 | POOL-01-06 | compliant | Defaults, admission errors, reset/discard and drain/shutdown match the contract; `maxWaiters` accepts zero. |
 | POOL-07 | compliant | `SessionCount`, `IdleSessionCount`, `ActiveSessionCount`, `WaitingCount`, `DiscardedSessionCount` and `AcquireTimeoutCount` are monotonic for the pool lifetime. |
 | SES-01–03 | compliant | Connect/close, prepare/execute and commit/rollback behave as required; close does not commit. |
-| SES-04–06 | compliant | The native `Db2Session` exposes `ChangeDatabaseAsync`, `SetCurrentSchemaAsync` and `CurrentSchema`. Name/schema validation happens before I/O, a change is refused during a transaction or on a pooled lease, and a failed reconnect leaves the session closed. |
+| SES-04–06 | compliant | The native `Db2Session` exposes `ChangeDatabaseAsync`, `SetCurrentSchemaAsync` and `CurrentSchema`. Name/schema validation happens before I/O, a change requires an open session and is refused during a transaction or on a pooled lease even for the current name, and a failed reconnect leaves the session closed. |
 | SES-07 | compliant | Isolation is transaction-scoped (`BeginTransactionAsync(isolation)`), which restores the previous register at the end. |
 | SES-08–10 | compliant | Transaction state is per session; batch order/progress and cancellation tokens are supported. |
 | VAL-01–10 | compliant | Native rows use exact strings; the ADO adapter may return `decimal`/`DateTime` for supported precisions. NULL, binary, CP500 and metadata rules are met. |

@@ -41,6 +41,27 @@ internal sealed class DssReadBuffer : IDisposable
         finally { Release(generation); }
     }
 
+    internal async ValueTask<IReadOnlyList<DssPacket>> ReadOwnedChainAsync(CancellationToken token = default)
+    {
+        var replies = new List<DssPacket>();
+        var count = 0;
+        long bytes = 0;
+        bool chained;
+        do
+        {
+            if (count >= MaxReplyChainPackets)
+                throw new Db2ResourceLimitException($"DB2 reply chain exceeds the {MaxReplyChainPackets}-packet limit.");
+            var reply = await ReadAsync(token).ConfigureAwait(false);
+            bytes += reply.Payload.Length;
+            if (bytes > MaxReplyChainBytes)
+                throw new Db2ResourceLimitException($"DB2 reply chain exceeds the {MaxReplyChainBytes}-byte limit.");
+            replies.Add(reply);
+            count++;
+            chained = reply.Header.Chained;
+        } while (chained);
+        return replies;
+    }
+
     internal async ValueTask<DssReplyChain> ReadChainAsync(CancellationToken token = default)
     {
         var generation = BeginRead(retaining: true);
@@ -53,7 +74,7 @@ internal sealed class DssReadBuffer : IDisposable
             {
                 packet = await ReadPacketCoreAsync(token).ConfigureAwait(false);
                 if (count >= MaxReplyChainPackets || bytes + packet.Length > MaxReplyChainBytes)
-                    throw new InvalidDataException($"DB2 reply chain exceeds configured limits ({MaxReplyChainPackets} packets, {MaxReplyChainBytes} bytes).");
+                    throw new Db2ResourceLimitException($"DB2 reply chain exceeds configured limits ({MaxReplyChainPackets} packets, {MaxReplyChainBytes} bytes).");
                 bytes += packet.Length;
                 if (count == _packets.Length) Array.Resize(ref _packets, checked(count * 2));
                 _packets[count++] = packet;
@@ -77,7 +98,7 @@ internal sealed class DssReadBuffer : IDisposable
             do
             {
                 if (packets.Count >= MaxReplyChainPackets)
-                    throw new InvalidDataException($"DB2 reply chain exceeds configured packet limit ({MaxReplyChainPackets}).");
+                    throw new Db2ResourceLimitException($"DB2 reply chain exceeds configured packet limit ({MaxReplyChainPackets}).");
                 var streamed = await Db2DssStream.OpenAsync(
                     _ownedStream ??= new OwnedPacketStream(this),
                     maxPayloadBytes,

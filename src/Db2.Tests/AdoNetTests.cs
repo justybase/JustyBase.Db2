@@ -30,6 +30,14 @@ public sealed class AdoNetTests
     }
 
     [Fact]
+    public void AdoPoolOptionsAcceptZeroWaiters()
+    {
+        var config = Db2Config.Parse("Database=TESTDB;max_waiters=0");
+        var options = Db2AdoConnection.ReadPoolOptions(config, 1);
+        Assert.Equal(0, options.MaxWaiters);
+    }
+
+    [Fact]
     public void ConnectionStringBuilderRetainsDb2AndPoolOptions()
     {
         var builder = new Db2AdoConnectionStringBuilder

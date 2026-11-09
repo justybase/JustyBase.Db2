@@ -47,8 +47,27 @@ public sealed class DssReplyChainTests
         }
         bytes.Position = 0;
         using var reader = new DssReadBuffer(bytes);
-        var error = await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.ReadChainAsync());
+        var error = await Assert.ThrowsAsync<Db2ResourceLimitException>(async () => await reader.ReadChainAsync());
         Assert.Contains("reply chain exceeds configured limits", error.Message);
+    }
+
+    [Fact]
+    public async Task OwnedReplyChainLimitsFailClosed()
+    {
+        const int packets = (int)DssReadBuffer.MaxReplyChainPackets + 1;
+        var body = DdmCodec.PackObject(CodePoint.SQLCARD, ReadOnlySpan<byte>.Empty);
+        var bytes = new MemoryStream();
+        for (var index = 0; index < packets; index++)
+        {
+            var length = (ushort)(6 + body.Length);
+            var chained = index < packets - 1;
+            bytes.Write(new byte[] { (byte)(length >> 8), (byte)length, 0xD0, (byte)(chained ? DssCodec.ChainedFlag : 0x00), 0x00, 0x01 });
+            bytes.Write(body);
+        }
+        bytes.Position = 0;
+        using var reader = new DssReadBuffer(bytes);
+        var error = await Assert.ThrowsAsync<Db2ResourceLimitException>(async () => await reader.ReadOwnedChainAsync());
+        Assert.Contains("reply chain exceeds", error.Message);
     }
 
     [Fact]

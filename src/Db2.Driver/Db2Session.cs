@@ -473,7 +473,6 @@ public sealed partial class Db2Session : IAsyncDisposable
             throw new Db2ConfigurationException("DB2 database name must not be empty.");
         if (target.Length > 128 || target.Contains('\0'))
             throw new Db2ConfigurationException($"Invalid DB2 database name '{database}'.");
-        if (string.Equals(target, _config.Database, StringComparison.Ordinal)) return;
 
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -491,6 +490,7 @@ public sealed partial class Db2Session : IAsyncDisposable
                 throw new InvalidOperationException("The database cannot be changed while a transaction is active.");
             if (_poolBaselineCaptured)
                 throw new InvalidOperationException("The database cannot be changed on a pooled session; acquire with the target DSN instead.");
+            if (string.Equals(target, _config.Database, StringComparison.Ordinal)) return;
 
             var replacement = _config.CloneWithDatabase(target);
             using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -1135,18 +1135,11 @@ public sealed partial class Db2Session : IAsyncDisposable
         return ExecuteBatchCoreAsync(sql, parameterSets, options, null, cancellationToken);
     }
 
-    /// <summary>Executes a batch bounded by the JDC row/byte limits.</summary>
-    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, CancellationToken cancellationToken = default)
+    /// <summary>Executes a batch bounded by the JDC row/byte limits, optionally under a command deadline.</summary>
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(batchOptions); batchOptions.Validate();
-        return ExecuteBatchCoreAsync(sql, parameterSets, null, batchOptions, cancellationToken);
-    }
-
-    /// <summary>Executes a batch bounded by row/byte limits and a command deadline.</summary>
-    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions options, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(batchOptions); batchOptions.Validate();
-        ArgumentNullException.ThrowIfNull(options); options.Validate();
+        options?.Validate();
         return ExecuteBatchCoreAsync(sql, parameterSets, options, batchOptions, cancellationToken);
     }
 
@@ -3214,16 +3207,11 @@ public sealed partial class Db2Session : IAsyncDisposable
 
     private async Task<IReadOnlyList<DssPacket>> ReadReplyChainAsync(CancellationToken token)
     {
-        var replies = new List<DssPacket>();
         try
         {
-            bool chained;
-            do
-            {
-                var reply = await (_readBuffer ??= new DssReadBuffer(_stream)).ReadAsync(token).ConfigureAwait(false);
-                replies.Add(reply);
-                chained = reply.Header.Chained;
-            } while (chained);
+            // The compatibility reader services many command paths directly;
+            // enforce the same chain budget here, before retaining another packet.
+            var replies = await (_readBuffer ??= new DssReadBuffer(_stream)).ReadOwnedChainAsync(token).ConfigureAwait(false);
             foreach (var reply in replies)
                 if ((CodePoint)reply.CodePoint == CodePoint.DTAMCHRM)
                     throw new InvalidOperationException("DB2 server returned DTAMCHRM (SQLDTA descriptor and parameter data do not match).");

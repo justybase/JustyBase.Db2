@@ -60,7 +60,7 @@ Values beyond those limits fail instead of allocating without bound. Protocol ab
 
 ### Bounded batches
 
-`Db2Session.ExecuteBatchAsync` and `Db2Pool.ExecuteBatchAsync` accept `Db2BatchOptions` with `MaxRows` (default 256, valid 1..32767) and `MaxEncodedBytes` (default 8 MiB). The byte limit is soft: one oversized set is sent alone. The native path sends one parameter set per request, so the wire request is stricter than the chunk bound.
+`Db2Session.ExecuteBatchAsync` and `Db2Pool.ExecuteBatchAsync` accept `Db2BatchOptions` with `MaxRows` (default 256, valid 1..32767) and `MaxEncodedBytes` (default 8 MiB). The byte limit is soft: one oversized set is sent alone. The native path sends one parameter set per request, so the wire request is stricter than the chunk bound. Command options are the next optional argument on the same overload; pass a cancellation token with batch options by name (`cancellationToken:`).
 
 ### Progressive locator reads
 

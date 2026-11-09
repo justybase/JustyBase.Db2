@@ -94,9 +94,16 @@ public sealed class SessionVerbsLoopbackTests
             await Assert.ThrowsAsync<Db2ConfigurationException>(() => session.ChangeDatabaseAsync("A\0B"));
             await Assert.ThrowsAsync<Db2ConfigurationException>(() => session.ChangeDatabaseAsync(new string('D', 129)));
 
+            // A same-name switch is only a no-op on an open, non-transactional,
+            // non-pooled session; it must not bypass those preconditions.
+            await session.ChangeDatabaseAsync("FIRSTDB");
+            Assert.False(session.IsClosed);
+
             session.AutoCommit = false;
             var transaction = await Assert.ThrowsAsync<InvalidOperationException>(() => session.ChangeDatabaseAsync("NEXTDB"));
             Assert.Contains("transaction", transaction.Message, StringComparison.OrdinalIgnoreCase);
+            var sameTransaction = await Assert.ThrowsAsync<InvalidOperationException>(() => session.ChangeDatabaseAsync("FIRSTDB"));
+            Assert.Contains("transaction", sameTransaction.Message, StringComparison.OrdinalIgnoreCase);
             session.AutoCommit = true;
 
             var pooled = typeof(Db2Session).GetField("_poolBaselineCaptured", BindingFlags.Instance | BindingFlags.NonPublic)!;
@@ -105,10 +112,14 @@ public sealed class SessionVerbsLoopbackTests
             {
                 var lease = await Assert.ThrowsAsync<InvalidOperationException>(() => session.ChangeDatabaseAsync("NEXTDB"));
                 Assert.Contains("pooled session", lease.Message, StringComparison.OrdinalIgnoreCase);
+                var sameLease = await Assert.ThrowsAsync<InvalidOperationException>(() => session.ChangeDatabaseAsync("FIRSTDB"));
+                Assert.Contains("pooled session", sameLease.Message, StringComparison.OrdinalIgnoreCase);
                 Assert.False(session.IsClosed);
             }
             finally { pooled.SetValue(session, false); }
         }
+
+        await Assert.ThrowsAsync<Db2ConnectionClosedException>(() => session.ChangeDatabaseAsync("FIRSTDB"));
         await server.WaitAsync(TimeSpan.FromSeconds(10));
     }
 

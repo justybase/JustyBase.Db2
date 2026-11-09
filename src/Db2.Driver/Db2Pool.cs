@@ -392,10 +392,7 @@ public sealed class Db2Pool : IAsyncDisposable
     public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions options, CancellationToken cancellationToken = default) =>
         ExecuteBatchCoreAsync(sql, parameterSets, options, null, cancellationToken);
 
-    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, CancellationToken cancellationToken = default) =>
-        ExecuteBatchCoreAsync(sql, parameterSets, null, batchOptions, cancellationToken);
-
-    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions options, CancellationToken cancellationToken = default) =>
+    public Task<long> ExecuteBatchAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2BatchOptions batchOptions, Db2CommandOptions? options = null, CancellationToken cancellationToken = default) =>
         ExecuteBatchCoreAsync(sql, parameterSets, options, batchOptions, cancellationToken);
 
     private async Task<long> ExecuteBatchCoreAsync(string sql, IReadOnlyList<IReadOnlyList<object?>> parameterSets, Db2CommandOptions? options, Db2BatchOptions? batchOptions, CancellationToken cancellationToken)
@@ -412,7 +409,7 @@ public sealed class Db2Pool : IAsyncDisposable
                 {
                     (null, null) => session.ExecuteBatchAsync(sql, parameterSets, token),
                     (not null, null) => session.ExecuteBatchAsync(sql, parameterSets, options, token),
-                    (null, not null) => session.ExecuteBatchAsync(sql, parameterSets, batchOptions, token),
+                    (null, not null) => session.ExecuteBatchAsync(sql, parameterSets, batchOptions, options: null, cancellationToken: token),
                     _ => session.ExecuteBatchAsync(sql, parameterSets, batchOptions!, options!, token),
                 };
             }, cancellationToken).ConfigureAwait(false);

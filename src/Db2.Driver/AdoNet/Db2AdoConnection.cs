@@ -420,18 +420,18 @@ public class Db2AdoConnection : DbConnection
         return ParsedConnections.GetOrAdd(connectionString, entry);
     }
 
-    private static Db2PoolOptions ReadPoolOptions(Db2Config config, int maxConnections)
+    internal static Db2PoolOptions ReadPoolOptions(Db2Config config, int maxConnections)
     {
-        int Read(string key, int fallback)
+        int Read(string key, int fallback, int minimum = 1)
         {
             if (!config.Parameters.TryGetValue(key, out var raw) && !config.Parameters.TryGetValue(key.Replace("_", "", StringComparison.Ordinal), out raw)) return fallback;
-            if (!int.TryParse(raw, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var value) || value < 1)
+            if (!int.TryParse(raw, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var value) || value < minimum)
                 throw new Db2ConfigurationException($"Invalid pool option {key}.");
             return value;
         }
         var options = new Db2PoolOptions(maxConnections)
         {
-            MaxWaiters = Read("max_waiters", 100),
+            MaxWaiters = Read("max_waiters", 100, minimum: 0),
             AcquireTimeout = TimeSpan.FromSeconds(Read("pool_acquire_timeout", 30)),
             ConnectTimeout = TimeSpan.FromSeconds(Read("pool_connect_timeout", 10)),
             IdleTimeout = TimeSpan.FromSeconds(Read("pool_idle_timeout", 300)),
