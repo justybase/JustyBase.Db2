@@ -216,9 +216,9 @@ public sealed partial class Db2Session : IAsyncDisposable
     private const ushort SectionNumber = 65;
     private const int MaximumSecurityTokenLength = 32000;
 
-    private readonly TcpClient _client;
-    private readonly Stream _stream;
-    private readonly Db2Config _config;
+    private TcpClient _client;
+    private Stream _stream;
+    private Db2Config _config;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly object _interruptGate = new();
     private byte[]? _rdbInterruptToken;
@@ -227,14 +227,13 @@ public sealed partial class Db2Session : IAsyncDisposable
     private int _operationActive;
     private int _requestWritten;
     private int _interruptUsed;
-    private readonly string _database;
-    private readonly ushort _securityMechanism;
+    private string _database;
+    private ushort _securityMechanism;
     /// <summary>Mechanism the server accepted in ACCSECRD; 0 until the handshake completes.</summary>
     private ushort _negotiatedSecurityMechanism;
     private readonly KerberosCredentialPlan? _kerberosPlan;
     private readonly Func<IKerberosTokenProvider>? _kerberosProviderFactory;
-    private readonly uint _blockSize;
-
+    private uint _blockSize;
     /// <summary>Raised when Db2 returns a successful SQL warning on this session.</summary>
     public event EventHandler<Db2WarningEventArgs>? Warning;
     private ushort _correlationId = 1;
@@ -250,6 +249,8 @@ public sealed partial class Db2Session : IAsyncDisposable
     private Db2ClientInfo _baseClientInfo = new();
     private string? _baseSchema;
     private string? _baseIsolation;
+    private readonly string? _configuredSchema;
+    private string? _currentSchema;
     private bool _poolBaselineCaptured;
     // Conservatively dirty until an actual baseline/reset completes. Any exchange
     // may run server-side code; a SQL keyword is not evidence of register safety.
@@ -268,6 +269,8 @@ public sealed partial class Db2Session : IAsyncDisposable
         _database = config.Database.PadRight(18)[..18];
         _securityMechanism = config.SecurityMechanism == 0 ? (ushort)3 : config.SecurityMechanism;
         _blockSize = config.BlockSize >= 1024 ? (uint)config.BlockSize : 65535;
+        _configuredSchema = NormalizeCurrentSchema(config.CurrentSchema);
+        _currentSchema = _configuredSchema;
         _currentUser = config.User;
         _baseUser = config.User;
         _poolBaselineCaptured = poolBaselineCaptured;
@@ -366,6 +369,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             throw new Db2ConfigurationException($"Unsupported DB2 authentication mechanism {config.SecurityMechanism}. Supported mechanisms are 3 (USRIDPWD), 7 (USRENCPWD), 9 (EUSRIDPWD), and 11 (Kerberos/GSSAPI).");
         // Resolved before any socket is opened so configuration mistakes never reach the wire.
         var kerberosPlan = config.SecurityMechanism == 11 && kerberosProviderFactory is null ? KerberosCredentialPlan.Resolve(config) : null;
+        var currentSchema = NormalizeCurrentSchema(config.CurrentSchema);
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (config.Timeout > TimeSpan.Zero) timeoutSource.CancelAfter(config.Timeout);
         var client = new TcpClient();
@@ -400,6 +404,8 @@ public sealed partial class Db2Session : IAsyncDisposable
             var session = new Db2Session(client, stream, config, kerberosPlan: kerberosPlan, kerberosProviderFactory: kerberosProviderFactory);
             handshakeStarted = true;
             await session.HandshakeAsync(timeoutSource.Token).ConfigureAwait(false);
+            if (currentSchema is not null)
+                await session.SetCurrentSchemaAsync(currentSchema, timeoutSource.Token).ConfigureAwait(false);
             return session;
         }
         catch (OperationCanceledException error) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
@@ -435,6 +441,173 @@ public sealed partial class Db2Session : IAsyncDisposable
             await SwitchUserLockedAsync(target, token, password: password).ConfigureAwait(false);
             return true;
         }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The CURRENT SCHEMA last set by the driver, or <see langword="null"/> when unset.</summary>
+    public string? CurrentSchema => _currentSchema;
+
+    /// <summary>Sets CURRENT SCHEMA for subsequent SQL on this session.</summary>
+    public async Task SetCurrentSchemaAsync(string schema, CancellationToken cancellationToken = default)
+    {
+        var target = NormalizeCurrentSchema(schema)
+            ?? throw new Db2ConfigurationException("DB2 current schema must not be empty.");
+        await WithGateAsync(async token =>
+        {
+            EnsureOpen();
+            await SetCurrentSchemaLockedAsync(target, token).ConfigureAwait(false);
+            return true;
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Reconnects this session to another database on the same server. Fails
+    /// before any I/O for an empty or invalid name, refuses while a transaction
+    /// is active or on a pooled lease, and leaves the session closed if the
+    /// reconnect fails so it never half-connects or silently keeps the old database.
+    /// </summary>
+    public async Task ChangeDatabaseAsync(string database, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+        var target = database.Trim();
+        if (target.Length == 0)
+            throw new Db2ConfigurationException("DB2 database name must not be empty.");
+        if (target.Length > 128 || target.Contains('\0'))
+            throw new Db2ConfigurationException($"Invalid DB2 database name '{database}'.");
+        if (string.Equals(target, _config.Database, StringComparison.Ordinal)) return;
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            EnsureOpen();
+            Task<bool>? pending;
+            lock (_interruptGate) pending = _interruptPending;
+            if (pending is not null)
+            {
+                try { await pending.WaitAsync(cancellationToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                catch { /* The previous interrupt settled; its outcome does not poison this switch. */ }
+            }
+            if (_transactionActive || !AutoCommit)
+                throw new InvalidOperationException("The database cannot be changed while a transaction is active.");
+            if (_poolBaselineCaptured)
+                throw new InvalidOperationException("The database cannot be changed on a pooled session; acquire with the target DSN instead.");
+
+            var replacement = _config.CloneWithDatabase(target);
+            using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (replacement.Timeout > TimeSpan.Zero) timeoutSource.CancelAfter(replacement.Timeout);
+            var previousClient = _client;
+            var previousStream = _stream;
+            TcpClient? client = null;
+            Stream? stream = null;
+            var handshakeStarted = false;
+            try
+            {
+                // Abandon the old transport before the new handshake. A failure below
+                // leaves the session closed instead of resurrecting the old database.
+                _closed = true;
+                try { await previousStream.DisposeAsync().ConfigureAwait(false); } catch { /* already closing */ }
+                previousClient.Dispose();
+
+                client = new TcpClient { NoDelay = true };
+                await client.ConnectAsync(replacement.Host, replacement.Port, timeoutSource.Token).ConfigureAwait(false);
+                stream = client.GetStream();
+                if (replacement.UseSsl)
+                {
+                    var certificates = new X509CertificateCollection();
+                    if (!string.IsNullOrEmpty(replacement.SslClientCertPath))
+                    {
+                        var certificate = string.IsNullOrEmpty(replacement.SslClientKeyPath)
+                            ? X509CertificateLoader.LoadCertificateFromFile(replacement.SslClientCertPath)
+                            : X509Certificate2.CreateFromPemFile(replacement.SslClientCertPath, replacement.SslClientKeyPath);
+                        certificates.Add(certificate);
+                    }
+                    var ssl = new SslStream(stream, false, CreateCertificateValidator(replacement.SslRootCaPath));
+                    await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                    {
+                        TargetHost = replacement.Host,
+                        EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13,
+                        ClientCertificates = certificates,
+                    }, timeoutSource.Token).ConfigureAwait(false);
+                    stream = ssl;
+                }
+#if DB2_PERF_COUNTERS
+                stream = new Db2PerformanceCounters.CountingStream(stream);
+#endif
+                _client = client;
+                _stream = stream;
+                _config = replacement;
+                _database = replacement.Database.PadRight(18)[..18];
+                _securityMechanism = replacement.SecurityMechanism == 0 ? (ushort)3 : replacement.SecurityMechanism;
+                _blockSize = replacement.BlockSize >= 1024 ? (uint)replacement.BlockSize : 65535;
+                ResetForReconnect();
+                handshakeStarted = true;
+                await HandshakeAsync(timeoutSource.Token).ConfigureAwait(false);
+                _closed = false;
+                if (_configuredSchema is not null)
+                    await SetCurrentSchemaLockedAsync(_configuredSchema, timeoutSource.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException error) when (timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                _closed = true;
+                try { if (stream is not null) await stream.DisposeAsync().ConfigureAwait(false); } catch { }
+                client?.Dispose();
+                throw new Db2CommandTimeoutException(
+                    replacement.Timeout,
+                    error,
+                    handshakeStarted ? Db2OperationOutcome.Unknown : Db2OperationOutcome.NotStarted);
+            }
+            catch
+            {
+                _closed = true;
+                try { if (stream is not null) await stream.DisposeAsync().ConfigureAwait(false); } catch { }
+                client?.Dispose();
+                throw;
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
+    private async Task SetCurrentSchemaLockedAsync(string target, CancellationToken cancellationToken)
+    {
+        await ExecuteSqlSetLockedAsync($"SET CURRENT SCHEMA {QuoteIdentifier(target)}", cancellationToken).ConfigureAwait(false);
+        _preparedSql = null;
+        _currentSchema = target;
+    }
+
+    private void ResetForReconnect()
+    {
+        _correlationId = 1;
+        _sqlamLevel = 11;
+        _rdbInterruptToken = null;
+        _negotiatedSecurityMechanism = 0;
+        _transactionIsolationBaseline = null;
+        _transactionActive = false;
+        AutoCommit = true;
+        _preparedSql = null;
+        _transactionGeneration++;
+        _currentUser = _config.User;
+        _baseUser = _config.User;
+        _baseSchema = null;
+        _baseIsolation = null;
+        _poolBaselineCaptured = false;
+        _poolStateDirty = true;
+        _currentSchema = _configuredSchema;
+        _clientInfo = new Db2ClientInfo();
+        _baseClientInfo = new Db2ClientInfo();
+        _readBuffer = null;
+        Volatile.Write(ref _operationActive, 0);
+        Volatile.Write(ref _requestWritten, 0);
+        Volatile.Write(ref _interruptUsed, 0);
+        lock (_interruptGate) _interruptPending = null;
+    }
+
+    private static string? NormalizeCurrentSchema(string? value)
+    {
+        var target = value?.Trim() ?? "";
+        if (target.Length == 0) return null;
+        if (target.Length > 128) throw new Db2ConfigurationException("DB2 current schema exceeds 128 characters.");
+        if (target.Contains('\0')) throw new Db2ConfigurationException("DB2 current schema must not contain NUL.");
+        return target;
     }
 
     public Task<Db2QueryResult> QueryAsync(string sql, CancellationToken cancellationToken = default) =>
@@ -1058,6 +1231,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             }
             if (_poolBaselineCaptured && !_poolStateDirty)
             {
+                _currentSchema = _configuredSchema;
                 Warning = null;
                 return true;
             }
@@ -1087,6 +1261,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             }
             // Lease-specific warning subscriptions must not leak into the next borrower.
             _poolStateDirty = false;
+            _currentSchema = _configuredSchema;
             Warning = null;
             return true;
         }, CancellationToken.None);

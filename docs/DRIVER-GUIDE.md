@@ -39,6 +39,8 @@ When a lease returns, the driver validates relevant server session state and res
 
 If reset cannot be proven successful, the session is discarded instead of reused.
 
+The native session exposes `SetCurrentSchemaAsync`/`CurrentSchema` and `ChangeDatabaseAsync`. A database switch validates the target before I/O, is refused while a transaction is active or on a pooled lease, and leaves the session closed if the reconnect fails. The configured `currentschema` is applied at connect and restored by the pool reset.
+
 ## ADO.NET reader lifecycle
 
 `DbDataReader` exposes forward-only result consumption. Result-set and procedure lifecycles matter because Db2 can return cursor metadata, row data, output parameters and external LOB payloads across several DRDA reply objects.

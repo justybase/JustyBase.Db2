@@ -119,10 +119,28 @@ public sealed class ConfigTests
     [Fact]
     public void ParsesSupportedServerAuthenticationAndClientInfoSettings()
     {
-        var config = Db2Config.Parse("Server=localhost:50000;Database=TESTDB;Authentication=SERVER;security_mechanism=3;spn=db2/server@CORP.LOCAL;krb5_config=/etc/krb5.conf;krb5_keytab=/etc/db2.keytab;krb5_ccache=/tmp/krb5cc_1000;client_applname=orders;client_corr_token=trace");
+        var config = Db2Config.Parse("Server=localhost:50000;Database=TESTDB;CurrentSchema= APP ;Authentication=SERVER;security_mechanism=3;spn=db2/server@CORP.LOCAL;krb5_config=/etc/krb5.conf;krb5_keytab=/etc/db2.keytab;krb5_ccache=/tmp/krb5cc_1000;client_applname=orders;client_corr_token=trace");
         Assert.Equal((3, "db2/server@CORP.LOCAL", "/etc/krb5.conf", "/etc/db2.keytab", "/tmp/krb5cc_1000"),
             (config.SecurityMechanism, config.KerberosSpn, config.Krb5ConfigFile, config.Krb5KeytabFile, config.Krb5CcacheFile));
         Assert.Equal(("orders", "trace"), (config.ClientApplName, config.ClientCorrToken));
+        Assert.Equal("APP", config.CurrentSchema);
+        Assert.Equal("APP", Db2Config.Parse("db2://localhost/TESTDB?current_schema=APP").CurrentSchema);
+        Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse("Database=TESTDB;CurrentSchema=   "));
+        Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse("db2://localhost/TESTDB?current_schema="));
+    }
+
+    [Fact]
+    public void ParsesEveryJdcKerberosAliasAndRejectsUnknownKerberosKeys()
+    {
+        var config = Db2Config.Parse("Database=TESTDB;kerberos_spn=db2/server@REALM;kerberos_realm=REALM;krb5principal=user@REALM;client_principal=other@REALM;kerberos_principal=third@REALM;krb5_config=/etc/krb5.conf;keytab=/tmp/db2.keytab;ccache=/tmp/cc;gssapi_token=/tmp/token.bin");
+        Assert.Equal(("db2/server@REALM", "REALM", "third@REALM", "/etc/krb5.conf", "/tmp/db2.keytab", "/tmp/cc", "/tmp/token.bin"),
+            (config.KerberosSpn, config.KerberosRealm, config.KerberosPrincipal, config.Krb5ConfigFile, config.Krb5KeytabFile, config.Krb5CcacheFile, config.GssapiTokenFile));
+        foreach (var key in new[] { "krb5_ticket_lifetime", "kerberos_misspelled", "gssapi_unknown" })
+        {
+            Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse($"Database=TESTDB;{key}=x"));
+            Assert.Throws<Db2ConfigurationException>(() => Db2Config.Parse($"db2://localhost/TESTDB?{key}=x"));
+        }
+        Assert.Equal("x", Db2Config.Parse("Database=TESTDB;custom_option=x").Parameters["custom_option"]);
     }
 
     [Theory]

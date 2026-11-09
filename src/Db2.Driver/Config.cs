@@ -10,6 +10,8 @@ public sealed class Db2Config
     public string Host { get; set; } = "localhost";
     public int Port { get; set; } = 50000;
     public string Database { get; set; } = "";
+    /// <summary>CURRENT SCHEMA applied after connect and restored by the pool reset path.</summary>
+    public string CurrentSchema { get; set; } = "";
     public string User { get; set; } = "";
     public string Password { get; set; } = "";
     public bool UseSsl { get; set; }
@@ -33,6 +35,41 @@ public sealed class Db2Config
     public string ClientAcctng { get; set; } = "";
     public string ClientCorrToken { get; set; } = "";
     public Dictionary<string, string> Parameters { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>Copies this configuration for a reconnect to another database on the same server.</summary>
+    internal Db2Config CloneWithDatabase(string database)
+    {
+        var clone = new Db2Config
+        {
+            Host = Host,
+            Port = Port,
+            Database = database,
+            CurrentSchema = CurrentSchema,
+            User = User,
+            Password = Password,
+            UseSsl = UseSsl,
+            SslRootCaPath = SslRootCaPath,
+            SslClientCertPath = SslClientCertPath,
+            SslClientKeyPath = SslClientKeyPath,
+            Timeout = Timeout,
+            BlockSize = BlockSize,
+            SecurityMechanism = SecurityMechanism,
+            KerberosSpn = KerberosSpn,
+            KerberosRealm = KerberosRealm,
+            KerberosPrincipal = KerberosPrincipal,
+            Krb5ConfigFile = Krb5ConfigFile,
+            Krb5KeytabFile = Krb5KeytabFile,
+            Krb5CcacheFile = Krb5CcacheFile,
+            GssapiTokenFile = GssapiTokenFile,
+            ClientApplName = ClientApplName,
+            ClientWrkstnName = ClientWrkstnName,
+            ClientUserid = ClientUserid,
+            ClientAcctng = ClientAcctng,
+            ClientCorrToken = ClientCorrToken,
+        };
+        foreach (var pair in Parameters) clone.Parameters[pair.Key] = pair.Value;
+        return clone;
+    }
 
     public static Db2Config Parse(string dsn)
     {
@@ -127,6 +164,10 @@ public sealed class Db2Config
                 break;
             case "port": if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var port) && port is > 0 and <= 65535) c.Port = port; break;
             case "database": case "dbname": case "db": c.Database = value; break;
+            case "currentschema": case "current_schema":
+                if (string.IsNullOrWhiteSpace(value)) throw new Db2ConfigurationException("DB2 current schema must not be empty.");
+                c.CurrentSchema = value;
+                break;
             case "user": case "uid": case "username": c.User = value; break;
             case "password": case "pwd": c.Password = value; break;
             case "authentication":

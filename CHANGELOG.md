@@ -15,7 +15,13 @@
   `IDb2Error`; `Db2BatchExecutionException` reports the outcome of its failing
   set. The pool discards a lease whose classified outcome is `Unknown`.
   API snapshot regenerated for the additive enum/interface members.
-
+- Added `currentschema`/`current_schema` DSN support and the native
+  `Db2Session.CurrentSchema`, `SetCurrentSchemaAsync` and `ChangeDatabaseAsync`
+  verbs. Names and schemas are validated before I/O, a database switch is
+  refused during a transaction or on a pooled lease, a failed reconnect leaves
+  the session closed, and the pool reset restores the configured schema. An
+  explicit empty schema is rejected. API snapshot regenerated for the additive
+  members.
 ## 0.1.0-alpha.4 - 2026-10-24
 
 - Both packages now target `net10.0` and `net11.0` (driver, IBMCompat and tests; CI, publish and dry-run workflows install .NET 10.0.112 and 11.0.100-rc.2; SBOM/package-contents allowlist and docs updated). Building `net11.0` requires the .NET 11 SDK.

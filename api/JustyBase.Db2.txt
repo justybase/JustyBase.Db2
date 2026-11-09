@@ -326,6 +326,7 @@ type class JustyBase.Db2.Db2Config
   System.String ClientCorrToken { get;set; }
   System.String ClientUserid { get;set; }
   System.String ClientWrkstnName { get;set; }
+  System.String CurrentSchema { get;set; }
   System.String Database { get;set; }
   System.String GssapiTokenFile { get;set; }
   System.String Host { get;set; }
@@ -541,11 +542,13 @@ type class JustyBase.Db2.Db2Session
   System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
   System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Collections.Generic.IReadOnlyList<System.Object> parameters, System.Threading.CancellationToken cancellationToken)
   System.Collections.Generic.IAsyncEnumerable<JustyBase.Db2.Db2StreamRow> QueryStreamAsync(System.String sql, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task ChangeDatabaseAsync(System.String database, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task PingAsync(System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task ResetClientInfoAsync(JustyBase.Db2.Db2ClientInfo info, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task SetClientInfoAsync(JustyBase.Db2.Db2ClientInfo info, System.Threading.CancellationToken cancellationToken)
+  System.Threading.Tasks.Task SetCurrentSchemaAsync(System.String schema, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task SwitchUserAsync(System.String user, System.String password, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task SwitchUserAsync(System.String user, System.Threading.CancellationToken cancellationToken)
   System.Threading.Tasks.Task<JustyBase.Db2.Db2ExecutionResult> ExecuteWithOutputsAsync(JustyBase.Db2.Db2Statement statement, System.Collections.Generic.IReadOnlyList<JustyBase.Db2.Db2Parameter> parameters, JustyBase.Db2.Db2CommandOptions options, System.Threading.CancellationToken cancellationToken)
@@ -581,6 +584,7 @@ type class JustyBase.Db2.Db2Session
   static System.Threading.Tasks.Task<JustyBase.Db2.Db2Session> ConnectAsync(JustyBase.Db2.Db2Config config, System.Threading.CancellationToken cancellationToken)
   static System.Threading.Tasks.Task<JustyBase.Db2.Db2Session> ConnectAsync(System.String dsn, System.Threading.CancellationToken cancellationToken)
   System.Boolean AutoCommit { get;set; }
+  System.String CurrentSchema { get; }
   System.String CurrentSessionUser { get; }
   System.Boolean IsClosed { get; }
   event System.EventHandler<JustyBase.Db2.Db2WarningEventArgs> Warning

@@ -132,6 +132,29 @@ public sealed class Db2IntegrationSmokeTests
     }
 
     [Db2LiveFact]
+    public async Task NativeSessionSchemaVerbsAndFailedChangeDatabaseFollowTheContract()
+    {
+        var schema = $"NATIVE_{Environment.ProcessId}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+        var replacement = $"NATIVE2_{Environment.ProcessId}_{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+        var dsn = Dsn + (Dsn.Contains('?') ? "&" : "?") + "CurrentSchema=" + Uri.EscapeDataString(schema);
+        await using var db = await Db2Session.ConnectAsync(dsn);
+
+        Assert.Equal(schema, db.CurrentSchema);
+        var initial = Assert.IsType<string>(Assert.Single((await db.QueryAsync("VALUES CURRENT SCHEMA")).Rows)[0]).Trim();
+        Assert.Equal(schema, initial);
+
+        await db.SetCurrentSchemaAsync("  " + replacement + "  ");
+        Assert.Equal(replacement, db.CurrentSchema);
+        var changed = Assert.IsType<string>(Assert.Single((await db.QueryAsync("VALUES CURRENT SCHEMA")).Rows)[0]).Trim();
+        Assert.Equal(replacement, changed);
+
+        var missingDatabase = "X" + Guid.NewGuid().ToString("N")[..17].ToUpperInvariant();
+        var error = await Record.ExceptionAsync(() => db.ChangeDatabaseAsync(missingDatabase));
+        Assert.NotNull(error);
+        Assert.True(db.IsClosed, "a failed reconnect must leave the native session closed");
+    }
+
+    [Db2LiveFact]
     public async Task InvalidSqlIsReportedAndSessionStaysUsable()
     {
         await using var db = await Db2Session.ConnectAsync(Dsn);
