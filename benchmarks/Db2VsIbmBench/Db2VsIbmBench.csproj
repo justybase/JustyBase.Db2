@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
-    <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="10.0.0.300">
+    <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="10.0.0.400">
       <Aliases>IBM</Aliases>
     </PackageReference>
   </ItemGroup>

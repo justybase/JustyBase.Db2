@@ -30,7 +30,14 @@ internal static class Secmec9
     private static byte[] ToFixed32(BigInteger value)
     {
         var output = new byte[32];
-        value.TryWriteBytes(output, out _, isUnsigned: true, isBigEndian: true);
+        var byteCount = value.GetByteCount(isUnsigned: true);
+        if (byteCount > output.Length)
+            throw new ArgumentOutOfRangeException(nameof(value), "DB2 EUSRIDPWD value does not fit in 32 bytes.");
+        // TryWriteBytes writes from the start of the destination. Right-align
+        // the fixed-width big-endian value so a leading zero byte is preserved
+        // instead of shifting a short value left by the number of missing bytes.
+        if (!value.TryWriteBytes(output.AsSpan(output.Length - byteCount), out _, isUnsigned: true, isBigEndian: true))
+            throw new ArgumentOutOfRangeException(nameof(value), "DB2 EUSRIDPWD value does not fit in 32 bytes.");
         return output;
     }
 

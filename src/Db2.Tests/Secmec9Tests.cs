@@ -71,6 +71,24 @@ public sealed partial class SessionTests
         Assert.Equal("DB2INST1", System.Text.Encoding.UTF8.GetString(Secmec9Decrypt(serverKey, iv, encryptedUserid)));
     }
 
+    [Theory]
+    [InlineData("D5", "0030FCFDC41AC5C49DB61127823D0C77DF4D4FAF5142CE3A9655FDC05241564E", "79CBDF72CADD86655D11C345A667A7E99C001BF4AF2D966A170B0EFF839231EF")]
+    [InlineData("94", "992D020F70CBCA257D6C96B488D080AE7744BB28FE93D480FDB3836D699AF09B", "00B119CFF92306A025088CD4FACFE80D1E0A1FC9CF9FBA9272075FBFF1079AA5")]
+    public void Secmec9FixedWidthSerializationPreservesLeadingZeroBytes(string privateHex, string expectedPublicHex, string expectedSharedHex)
+    {
+        // A DH result can need fewer than 32 significant bytes. The fixed-width
+        // serialization must right-align it; left-aligning shifts the value by
+        // the number of missing bytes and breaks key agreement ~1/256 of the time.
+        var privateKey = Secmec9FromHex(privateHex.PadLeft(64, '0'));
+        var serverPrivate = Secmec9FromHex(Secmec9ServerPrivateHex);
+        var serverPublic = Convert.FromHexString(Secmec9ServerPublicHex);
+        var publicKey = Secmec9.CalculatePublicKey(privateKey);
+
+        Assert.Equal(expectedPublicHex, Convert.ToHexString(publicKey));
+        Assert.Equal(expectedSharedHex, Convert.ToHexString(Secmec9.CalculateSessionKey(publicKey, serverPrivate)));
+        Assert.Equal(expectedSharedHex, Convert.ToHexString(Secmec9.CalculateSessionKey(serverPublic, privateKey)));
+    }
+
     [Fact]
     public async Task Secmec9HandshakeExchangesKeysInAccsecAndEncryptsUseridAndPassword()
     {

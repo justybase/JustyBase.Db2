@@ -3,7 +3,7 @@
     <ProjectReference Include="..\..\src\Db2.Driver\Db2.Driver.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="10.0.0.200">
+    <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="10.0.0.400">
       <Aliases>IBM</Aliases>
     </PackageReference>
   </ItemGroup>

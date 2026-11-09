@@ -44,6 +44,11 @@
   certificate is imported into a temporary user key container for the
   handshake and that container is removed afterwards. Connect, interrupt and
   change-database reconnects share the same loading and cleanup path.
+- Fixed intermittent SECMEC 7/9 authentication failures: a 32-byte Diffie-Hellman
+  value that needed fewer than 32 significant bytes was serialized left-aligned,
+  shifting the public key or shared secret. Values are now right-aligned, so a
+  leading zero byte no longer breaks key agreement for roughly one in 256
+  connections.
 
 ## 0.1.0-alpha.4 - 2026-10-24
 
