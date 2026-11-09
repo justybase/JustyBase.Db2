@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using JustyBase.Db2;
 using JustyBase.Db2.Protocol;
@@ -13,8 +14,35 @@ public sealed partial class SessionTests
 {
     private static string TlsFixture(string name) => TestTlsCertificates.Path(name);
 
-    private static X509Certificate2 LoadTestServerCertificate() =>
-        X509Certificate2.CreateFromPemFile(TlsFixture("server.pem"), TlsFixture("server-key.pem"));
+    private static readonly Lazy<X509Certificate2> TestServerCertificate = new(CreateTestServerCertificate);
+
+    private static X509Certificate2 LoadTestServerCertificate() => TestServerCertificate.Value;
+
+    private static X509Certificate2 CreateTestServerCertificate()
+    {
+        // Windows Schannel rejects the ephemeral key returned by CreateFromPemFile
+        // for server authentication ("platform does not support ephemeral keys").
+        // Import a PKCS#12 copy so the key is persisted for the test process, then
+        // delete the container when the process exits.
+        using var ephemeral = X509Certificate2.CreateFromPemFile(TlsFixture("server.pem"), TlsFixture("server-key.pem"));
+        var certificate = X509CertificateLoader.LoadPkcs12(
+            ephemeral.Export(X509ContentType.Pkcs12),
+            password: null,
+            X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.PersistKeySet);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            try
+            {
+                using var ecdsa = certificate.GetECDsaPrivateKey();
+                if (ecdsa is ECDsaCng ecdsaCng) ecdsaCng.Key.Delete();
+                using var rsa = certificate.GetRSAPrivateKey();
+                if (rsa is RSACng rsaCng) rsaCng.Key.Delete();
+            }
+            catch { /* best-effort cleanup of the throwaway test key */ }
+            certificate.Dispose();
+        };
+        return certificate;
+    }
 
     private static bool ClientCertificateIsTrusted(X509Certificate? certificate, X509Certificate2 root)
     {
@@ -69,21 +97,41 @@ public sealed partial class SessionTests
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
         var serverCertificate = LoadTestServerCertificate();
         var root = X509CertificateLoader.LoadCertificateFromFile(TlsFixture("ca.pem"));
+        var serverError = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var serverTask = Task.Run(async () =>
         {
-            using var client = await listener.AcceptTcpClientAsync();
-            await using var ssl = new SslStream(client.GetStream(), false, (_, certificate, _, _) => ClientCertificateIsTrusted(certificate, root));
-            await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+            try
             {
-                ServerCertificate = serverCertificate,
-                ClientCertificateRequired = true,
-                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-            });
-            await ServeMutualTlsHandshakeAsync(ssl);
+                using var client = await listener.AcceptTcpClientAsync();
+                await using var ssl = new SslStream(client.GetStream(), false, (_, certificate, _, _) => ClientCertificateIsTrusted(certificate, root));
+                await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = serverCertificate,
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                });
+                await ServeMutualTlsHandshakeAsync(ssl);
+                serverError.TrySetResult(null);
+            }
+            catch (Exception error)
+            {
+                serverError.TrySetResult(error);
+                throw;
+            }
         });
 
-        await using var session = await Db2Session.ConnectAsync(MutualTlsConfig(port));
-        Assert.False(session.IsClosed);
+        try
+        {
+            await using var session = await Db2Session.ConnectAsync(MutualTlsConfig(port));
+            Assert.False(session.IsClosed);
+        }
+        catch (Exception clientError)
+        {
+            var observed = await serverError.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            throw new InvalidOperationException(
+                $"Client failure: {clientError.Message}; server failure: {observed?.Message ?? "<none>"}",
+                clientError);
+        }
         await serverTask;
     }
 

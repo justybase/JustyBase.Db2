@@ -319,14 +319,9 @@ public sealed partial class Db2Session : IAsyncDisposable
         Stream stream = auxiliary.GetStream();
         if (_config.UseSsl)
         {
+            using var clientCertificate = TlsClientCertificate.Load(_config.SslClientCertPath, _config.SslClientKeyPath);
             var certificates = new X509CertificateCollection();
-            if (!string.IsNullOrEmpty(_config.SslClientCertPath))
-            {
-                var certificate = string.IsNullOrEmpty(_config.SslClientKeyPath)
-                    ? X509CertificateLoader.LoadCertificateFromFile(_config.SslClientCertPath)
-                    : X509Certificate2.CreateFromPemFile(_config.SslClientCertPath, _config.SslClientKeyPath);
-                certificates.Add(certificate);
-            }
+            if (clientCertificate is not null) certificates.Add(clientCertificate.Certificate);
             var ssl = new SslStream(stream, false, CreateCertificateValidator(_config.SslRootCaPath));
             await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
             {
@@ -381,14 +376,9 @@ public sealed partial class Db2Session : IAsyncDisposable
             Stream stream = client.GetStream();
             if (config.UseSsl)
             {
+                using var clientCertificate = TlsClientCertificate.Load(config.SslClientCertPath, config.SslClientKeyPath);
                 var certificates = new X509CertificateCollection();
-                if (!string.IsNullOrEmpty(config.SslClientCertPath))
-                {
-                    var certificate = string.IsNullOrEmpty(config.SslClientKeyPath)
-                        ? X509CertificateLoader.LoadCertificateFromFile(config.SslClientCertPath)
-                        : X509Certificate2.CreateFromPemFile(config.SslClientCertPath, config.SslClientKeyPath);
-                    certificates.Add(certificate);
-                }
+                if (clientCertificate is not null) certificates.Add(clientCertificate.Certificate);
                 var ssl = new SslStream(stream, false, CreateCertificateValidator(config.SslRootCaPath));
                 await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -513,14 +503,9 @@ public sealed partial class Db2Session : IAsyncDisposable
                 stream = client.GetStream();
                 if (replacement.UseSsl)
                 {
+                    using var clientCertificate = TlsClientCertificate.Load(replacement.SslClientCertPath, replacement.SslClientKeyPath);
                     var certificates = new X509CertificateCollection();
-                    if (!string.IsNullOrEmpty(replacement.SslClientCertPath))
-                    {
-                        var certificate = string.IsNullOrEmpty(replacement.SslClientKeyPath)
-                            ? X509CertificateLoader.LoadCertificateFromFile(replacement.SslClientCertPath)
-                            : X509Certificate2.CreateFromPemFile(replacement.SslClientCertPath, replacement.SslClientKeyPath);
-                        certificates.Add(certificate);
-                    }
+                    if (clientCertificate is not null) certificates.Add(clientCertificate.Certificate);
                     var ssl = new SslStream(stream, false, CreateCertificateValidator(replacement.SslRootCaPath));
                     await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                     {

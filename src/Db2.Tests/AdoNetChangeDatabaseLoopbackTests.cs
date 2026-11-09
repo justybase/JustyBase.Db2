@@ -14,6 +14,46 @@ namespace JustyBase.Db2.Tests;
 public sealed class AdoNetChangeDatabaseLoopbackTests
 {
     [Fact]
+    public async Task PoolingDisabledWithZeroWaitersOpensAndExecutes()
+    {
+        await Db2AdoConnection.ClearAllPoolsAsync();
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var database = "NOWAITDB";
+        var dsn = $"Server=127.0.0.1:{port};Database={database};UID=user;PWD=password;Pooling=false;max_waiters=0;Block_Size=32768;Client_ApplName=zero-waiter-test";
+        var serverTask = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            await using var stream = client.GetStream();
+            await AcceptHandshakeAsync(stream, database);
+            // Pooling is disabled, so there is no baseline probe between the
+            // handshake registers and the first user command.
+            await ServeScalarQueryAsync(stream, database, 17);
+            var buffer = new byte[1];
+            Assert.Equal(0, await stream.ReadAsync(buffer).AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
+        });
+
+        try
+        {
+            await using (var connection = new Db2AdoConnection(dsn))
+            {
+                await connection.OpenAsync();
+                Assert.Equal(ConnectionState.Open, connection.State);
+                Assert.Equal(database, connection.Database);
+                Assert.Equal(17, Assert.IsType<int>(await ScalarAsync(connection, "VALUES 17")));
+            }
+
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        finally
+        {
+            listener.Stop();
+            await Db2AdoConnection.ClearAllPoolsAsync();
+        }
+    }
+
+    [Fact]
     public async Task ChangeDatabaseReconnectsWithNewPoolKeyAndKeepsOldPoolSessionIsolated()
     {
         await Db2AdoConnection.ClearAllPoolsAsync();

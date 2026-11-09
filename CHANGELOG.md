@@ -39,6 +39,11 @@
   token positionally with batch options can use `cancellationToken: token`.
 - `ChangeDatabaseAsync` applies the open-session, active-transaction and pooled
   lease checks before treating a same-name switch as a no-op.
+- Mutual TLS with a PEM client certificate and key now works on Windows.
+  Schannel rejects the ephemeral key produced by PEM loading, so the client
+  certificate is imported into a temporary user key container for the
+  handshake and that container is removed afterwards. Connect, interrupt and
+  change-database reconnects share the same loading and cleanup path.
 
 ## 0.1.0-alpha.4 - 2026-10-24
 

@@ -2792,13 +2792,14 @@ public sealed partial class SessionTests
         using (var replacement = await listener.AcceptTcpClientAsync())
         {
             await using var stream = replacement.GetStream();
+            // The replacement handshake must begin correctly; only the exchange
+            // after the test's cancellation point may observe the client abort.
+            Assert.Equal(new ushort[] { (ushort)CodePoint.EXCSAT, (ushort)CodePoint.ACCSEC },
+                (await ReadChainAsync(stream)).Select(packet => packet.CodePoint));
+            replacementHandshakeStarted.TrySetResult();
+            await continueReplacementHandshake.WaitAsync(TimeSpan.FromSeconds(5));
             try
             {
-                Assert.Equal(new ushort[] { (ushort)CodePoint.EXCSAT, (ushort)CodePoint.ACCSEC },
-                    (await ReadChainAsync(stream)).Select(packet => packet.CodePoint));
-                replacementHandshakeStarted.TrySetResult();
-                await continueReplacementHandshake.WaitAsync(TimeSpan.FromSeconds(5));
-
                 await SendAsync(stream, CodePoint.ACCSECRD, DdmCodec.PackUInt16(CodePoint.SECMEC, 3));
                 Assert.Equal(new ushort[] { (ushort)CodePoint.SECCHK, (ushort)CodePoint.ACCRDB },
                     (await ReadChainAsync(stream)).Select(packet => packet.CodePoint));
@@ -2811,9 +2812,10 @@ public sealed partial class SessionTests
                 var buffer = new byte[1];
                 Assert.Equal(0, await stream.ReadAsync(buffer).AsTask().WaitAsync(TimeSpan.FromSeconds(5)));
             }
-            catch (EndOfStreamException)
+            catch (IOException)
             {
-                // The test closes the pool or cancels the waiter during the replacement handshake.
+                // The cancelled waiter aborts the replacement transport. Windows
+                // reports that as a reset on the read path instead of a clean EOF.
             }
         }
     }
