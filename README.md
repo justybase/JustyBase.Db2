@@ -63,7 +63,7 @@ Use `security_mechanism=7` (also `secmec=7`, `usrencpwd` or `encrypted_password_
 
 ## Status
 
-- **Experimental / alpha** (`0.1.0-alpha.4`). NuGet packages are prereleases; validate against your own Db2 environment and workload before production use.
+- **Experimental / alpha** (`0.1.0-alpha.5`). NuGet packages are prereleases; validate against your own Db2 environment and workload before production use.
 - **APIs may change** before 1.0, including the native API and result types.
 - **Not yet recommended for production use.** Validate against your own Db2 environment and workload first.
 
@@ -73,21 +73,21 @@ The observable behaviour implemented here is defined by [JDC v1](docs/DRIVER-CON
 
 ## Requirements
 
-- **.NET 10 or 11** (`net10.0`, `net11.0`) for the current alpha. Building the `net11.0` target requires the .NET 11 SDK (11.0.100-rc.2 or newer).
+- **.NET 10 or 11** (`net10.0`, `net11.0`) for the current alpha. Building the `net11.0` target requires the .NET 11 SDK (11.0.100 or newer).
 - An IBM Db2 LUW server reachable over TCP, optionally TLS.
 - Kerberos (SECMEC 11) only on Linux x86_64 with the system MIT GSS-API library.
 
 ## Supported and tested environments
 
-The maintained live qualification profile is **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112 (`net10.0`) and 11.0.100-rc.2 (`net11.0`) (see [Qualification and compatibility](docs/QUALIFICATION.md)). Compatibility has also been verified against **Db2 LUW 11.5.8** over TCP. Windows and macOS receive continuous managed protocol and API smoke coverage, but are not currently live-qualified against Db2. Db2 for z/OS and IBM i are outside the supported scope.
+The maintained live qualification profile is **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112 (`net10.0`) and 11.0.100 (`net11.0`) (see [Qualification and compatibility](docs/QUALIFICATION.md)). Compatibility has also been verified against **Db2 LUW 11.5.8** over TCP. Windows and macOS receive continuous managed protocol and API smoke coverage, but are not currently live-qualified against Db2. Db2 for z/OS and IBM i are outside the supported scope.
 
 ## Packages and local validation
 
 Install the prerelease packages from NuGet.org with an explicit version:
 
 ```bash
-dotnet add package JustyBase.Db2 --version 0.1.0-alpha.4
-dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.4
+dotnet add package JustyBase.Db2 --version 0.1.0-alpha.5
+dotnet add package JustyBase.Db2.IBMCompat --version 0.1.0-alpha.5
 ```
 
 The compatibility package depends on `JustyBase.Db2`; install it directly only when migrating selected `IBM.Data.Db2` APIs.
@@ -306,7 +306,7 @@ The command starts a temporary IBM Db2 12.1.5 Community container, runs the live
 
 The `CI` workflow runs this smoke suite for pushes and pull requests. The manual [Live Db2 Qualification workflow](.github/workflows/live-db2-manual.yml) runs the full live suite and three fresh Kerberos end-to-end environments. Both workflows publish short-lived, redacted TRX and console results for diagnosis.
 
-Requirements: Linux x86_64, Docker with a running daemon (the Db2 container runs in privileged mode), about 4 GB of free memory, 10 GB of free disk space and the .NET 10 SDK (or .NET 11 SDK 11.0.100-rc.2+ for the `net11.0` target). The first run is slower because Docker has to download the Db2 image (several GB); starting Db2 usually takes two to four minutes. The script passes `LICENSE=accept` to the IBM image, so running it means accepting the Db2 Community Edition license terms.
+Requirements: Linux x86_64, Docker with a running daemon (the Db2 container runs in privileged mode), about 4 GB of free memory, 10 GB of free disk space and the .NET 10 SDK (or .NET 11 SDK 11.0.100+ for the `net11.0` target). The first run is slower because Docker has to download the Db2 image (several GB); starting Db2 usually takes two to four minutes. The script passes `LICENSE=accept` to the IBM image, so running it means accepting the Db2 Community Edition license terms.
 
 CI also verifies the public API snapshot, SBOM generation, package contents, trim/AOT analyzer compatibility and offline protocol behavior. After the first successful run, configure `CI / CI gate` as the required branch protection check; it passes only after offline, platform, live Db2 and IBM provider parity lanes all pass. A green offline job alone does not claim live Db2 coverage.
 

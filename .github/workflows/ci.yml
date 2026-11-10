@@ -26,7 +26,7 @@ jobs:
         with:
           dotnet-version: |
             10.0.112
-            11.0.100-rc.2.26504.105
+            11.0.100
 
       - name: Build test project
         run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
@@ -89,7 +89,7 @@ jobs:
         with:
           dotnet-version: |
             10.0.112
-            11.0.100-rc.2.26504.105
+            11.0.100
 
       - name: Build platform smoke tests
         run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
@@ -126,7 +126,7 @@ jobs:
         with:
           dotnet-version: |
             10.0.112
-            11.0.100-rc.2.26504.105
+            11.0.100
 
       - name: Run isolated Db2 smoke suite
         env:
@@ -161,7 +161,7 @@ jobs:
         with:
           dotnet-version: |
             10.0.112
-            11.0.100-rc.2.26504.105
+            11.0.100
 
       - name: Run isolated IBM provider parity suite
         env:

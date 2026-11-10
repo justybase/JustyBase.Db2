@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.5 - 2026-11-10
+
 ### Changed
 
+- Both packages keep `net10.0` and `net11.0` targets; CI, publish, dry-run and live workflows now install the stable .NET SDK 11.0.100 (was 11.0.100-rc.2). Building `net11.0` requires the .NET 11 SDK 11.0.100+.
 - Expanded the IBM-provider parity suite to numeric boundaries,
   BOOLEAN/REAL/DOUBLE, finite and special DECFLOAT, text/binary, temporal
   boundaries, empty vs NULL LOBs, typed and conversion parameter matrices,

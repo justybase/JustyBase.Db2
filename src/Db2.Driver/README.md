@@ -2,7 +2,7 @@
 
 > Experimental managed .NET 10/11 driver for **IBM Db2 LUW**. Speaks DRDA/DDM directly over TCP/TLS, with no IBM CLI or ODBC runtime dependency.
 
-> **Alpha prerelease (`0.1.0-alpha.4`). Not recommended for production use.**
+> **Alpha prerelease (`0.1.0-alpha.5`). Not recommended for production use.**
 > APIs and protocol coverage may change between prereleases. Validate against your own Db2 environment and workload before relying on it.
 
 `JustyBase.Db2` is an independent open-source project. It is not affiliated with, endorsed by, or sponsored by IBM. IBM and Db2 are trademarks of International Business Machines Corporation.
@@ -19,7 +19,7 @@ New applications should use this package's native API and ADO.NET provider. For 
 - Reachability to an IBM Db2 LUW server over TCP, optionally TLS.
 - Kerberos (SECMEC 11) support is limited to Linux x86_64 with the system MIT GSS-API library.
 
-Maintainer qualification currently covers **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112 (`net10.0`) and 11.0.100-rc.2 (`net11.0`). Earlier live verification also covered Db2 LUW 11.5.8. Other platforms and Db2 versions are not regularly tested. Db2 for z/OS and IBM i are not supported targets.
+Maintainer qualification currently covers **Linux x64** with **Db2 LUW 12.1.5** over TCP and TLS, using .NET SDK 10.0.112 (`net10.0`) and 11.0.100 (`net11.0`). Earlier live verification also covered Db2 LUW 11.5.8. Other platforms and Db2 versions are not regularly tested. Db2 for z/OS and IBM i are not supported targets.
 
 ## Features
 
