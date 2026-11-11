@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Changed
+
+- The row decoder accepts the `0x42`/`0x43` LONG VARCHAR code points and reads
+  DECFLOAT(34) values at their 16-byte width.
+- `MAXBLKEXT` is clamped to `0xFFFF` when the configured block size exceeds
+  65535, instead of truncating the DDM value modulo 2^16.
+- `Db2AdoException.From` classifies raw `InvalidDataException` as
+  `Protocol`, `IOException`/`SocketException` as `Transport`, and
+  `NotSupportedException` as `Unsupported`, keeping wrapper errors aligned with
+  the native error kinds.
+
 ## 0.1.0-alpha.5 - 2026-11-10
 
 ### Changed

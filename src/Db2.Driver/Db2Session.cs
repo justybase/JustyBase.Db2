@@ -2766,7 +2766,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             case 0x0a: case 0x0b: Require(data, offset, 8); var float64 = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data.Slice(offset))); offset += 8; return float64;
             case 0x0c: case 0x0d: Require(data, offset, 4); var float32 = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset))); offset += 4; return float32;
             case 0x30: case 0x31: case 0x3c: case 0x3d: return ReadUtf8(data, ref offset, length);
-            case 0x32: case 0x33: case 0x34: case 0x35: case 0x3e: case 0x3f: case 0x40: case 0x41: return ReadUtf8(data, ref offset, ReadLength(data, ref offset));
+            case 0x32: case 0x33: case 0x34: case 0x35: case 0x3e: case 0x3f: case 0x40: case 0x41: case 0x42: case 0x43: return ReadUtf8(data, ref offset, ReadLength(data, ref offset));
             case 0x36: case 0x37: return ReadUtf16(data, ref offset, length * 2);
             case 0x38: case 0x39: case 0x3a: case 0x3b: return ReadUtf16(data, ref offset, ReadLength(data, ref offset) * 2);
             case 0x20: case 0x21: case 0x22: case 0x23: case 0x24: case 0x25: return ReadUtf8Trimmed(data, ref offset, length);
@@ -2780,7 +2780,7 @@ public sealed partial class Db2Session : IAsyncDisposable
             }
             case 0xba: case 0xbb:
             {
-                var dfpLength = field.Precision == 16 || field.Scale == 16 ? 16 : 8;
+                var dfpLength = field.Precision >= 16 || field.Scale == 16 ? 16 : 8;
                 Require(data, offset, dfpLength);
                 var value = Decfloat.Decode(data.Slice(offset, dfpLength));
                 offset += dfpLength;

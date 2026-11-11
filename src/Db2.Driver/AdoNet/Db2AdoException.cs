@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.Net.Sockets;
 
 namespace JustyBase.Db2.AdoNet;
 
@@ -22,6 +23,12 @@ public sealed class Db2AdoException : DbException, IDb2Error
         if (error is Db2AdoException adoException) return adoException;
         if (error is IDb2Error db2Error)
             return new Db2AdoException(error.Message, db2Error.ErrorKind, db2Error.SqlCode, db2Error.SqlState, error);
+        if (error is InvalidDataException)
+            return new Db2AdoException(error.Message, Db2ErrorKind.Protocol, innerException: error);
+        if (error is IOException or SocketException)
+            return new Db2AdoException(error.Message, Db2ErrorKind.Transport, innerException: error);
+        if (error is NotSupportedException)
+            return new Db2AdoException(error.Message, Db2ErrorKind.Unsupported, innerException: error);
         return new Db2AdoException(error.Message, Db2ErrorKind.ServerError, innerException: error);
     }
 }

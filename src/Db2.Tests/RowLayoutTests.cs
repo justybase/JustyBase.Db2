@@ -1,3 +1,5 @@
+using System.Text;
+using JustyBase.Db2.Converters;
 using JustyBase.Db2.Protocol;
 using Xunit;
 namespace JustyBase.Db2.Tests;
@@ -23,6 +25,36 @@ public sealed class RowLayoutTests
         var position = 0;
         Assert.True(Db2Session.TryMeasureRow(plans, bytes, ref position, out var fields, out var warning));
         Assert.Equal(2, fields); Assert.Equal(bytes.Length, position); Assert.Null(warning);
+    }
+
+    [Fact]
+    public void LongVarcharAndLongVarbinaryCodepointsDecode()
+    {
+        FieldDescriptor[] fields = [new(0x42, 0, 0), new(0x43, 0, 0), new(0x1e, 0, 4), new(0x1f, 0, 4)];
+        byte[] data = [0xff, 0, 0, 9, .. Encoding.UTF8.GetBytes("long text"), 0, 0, 3, 0x61, 0x62, 0x63, 1, 2, 3, 4, 0, 5, 6, 7, 8];
+
+        var (rows, consumed) = Db2Session.DecodeRowsIncremental(fields, data);
+
+        var row = Assert.Single(rows);
+        Assert.Equal(data.Length, consumed);
+        Assert.Equal("long text", row[0]);
+        Assert.Equal("abc", row[1]);
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, row[2]);
+        Assert.Equal(new byte[] { 5, 6, 7, 8 }, row[3]);
+    }
+
+    [Fact]
+    public void Decfloat34UsesSixteenByteWidth()
+    {
+        const string value = "12345678901234567890.12345678901234";
+        FieldDescriptor[] fields = [new(0xbb, 34, 0)];
+        byte[] data = [0xff, 0, 0, .. Decfloat.Encode(value, 16)];
+
+        var (rows, consumed) = Db2Session.DecodeRowsIncremental(fields, data);
+
+        var row = Assert.Single(rows);
+        Assert.Equal(data.Length, consumed);
+        Assert.Equal(value, row[0]);
     }
 
     [Theory]

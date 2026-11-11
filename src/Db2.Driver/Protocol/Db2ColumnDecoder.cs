@@ -26,7 +26,7 @@ internal readonly struct Db2ColumnDecoder
             case 0x06: case 0x07: Length = 1; break;
             case 0x0c: case 0x0d: Length = 4; break;
             case 0x0e: case 0x0f: Length = (field.Precision + 2) / 2; break;
-            case 0xba: case 0xbb: Length = field.Precision == 16 || field.Scale == 16 ? 16 : 8; break;
+            case 0xba: case 0xbb: Length = field.Precision >= 16 || field.Scale == 16 ? 16 : 8; break;
             case 0x36: case 0x37: Length *= 2; break;
             case 0x26: case 0x27: case 0x1e: case 0x1f: case 0xc0: case 0xc1: Length &= 0x7fff; break;
             case 0x30: case 0x31: case 0x3c: case 0x3d:

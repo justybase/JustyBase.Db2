@@ -11,6 +11,14 @@ namespace JustyBase.Db2.Tests;
 public sealed class AdoNetTests
 {
     [Fact]
+    public void AdoExceptionMapsRawProtocolTransportAndUnsupportedErrors()
+    {
+        Assert.Equal(Db2ErrorKind.Protocol, Db2AdoException.From(new InvalidDataException("bad frame")).ErrorKind);
+        Assert.Equal(Db2ErrorKind.Transport, Db2AdoException.From(new IOException("socket lost")).ErrorKind);
+        Assert.Equal(Db2ErrorKind.Unsupported, Db2AdoException.From(new NotSupportedException("no support")).ErrorKind);
+    }
+
+    [Fact]
     public void FactoryCreatesProviderObjectsAndConnectionParsesStandardAndUrlStrings()
     {
         var factory = Db2AdoProviderFactory.Instance;

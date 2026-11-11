@@ -495,6 +495,16 @@ public sealed class ProtocolTests
     }
 
     [Fact]
+    public void QueryBlockSizesAboveU16ClampMaxBlkExt()
+    {
+        var request = DdmCodec.PackOpenQueryWithParams("SQLC0X0", "", 0, "TESTDB", 70_000);
+
+        var parameters = DdmCodec.ParseParameters(request.AsSpan(4));
+        Assert.Equal(70_000U, BinaryPrimitives.ReadUInt32BigEndian(parameters[(ushort)CodePoint.QRYBLKSZ]));
+        Assert.Equal(ushort.MaxValue, BinaryPrimitives.ReadUInt16BigEndian(parameters[(ushort)CodePoint.MAXBLKEXT]));
+    }
+
+    [Fact]
     public void ExecuteStatementPacksResultSetOptionsInDrdaOrder()
     {
         var command = DdmCodec.PackExecuteSqlStatement("SQLC0X0", "", 0, "TESTDB", ushort.MaxValue);

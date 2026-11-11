@@ -102,8 +102,9 @@ internal static partial class DdmCodec
         }
         else
         {
-            // Preserve the existing MAXBLKEXT value exactly; protocol tuning is separate.
-            WriteUInt16Parameter(body[offset..], CodePoint.MAXBLKEXT, (ushort)blockSize); offset += 6;
+            // MAXBLKEXT is a 16-bit field. QRYBLKSZ above 65535 is clamped here
+            // until a live block probe proves a larger extension is accepted.
+            WriteUInt16Parameter(body[offset..], CodePoint.MAXBLKEXT, (ushort)Math.Min(blockSize, ushort.MaxValue)); offset += 6;
             ParamCloseImplicit.CopyTo(body[offset..]); offset += 5;
             if (command == CodePoint.OPNQRY) WriteByteParameter(body[offset..], CodePoint.DYNDTAFMT, 0xf1);
         }
