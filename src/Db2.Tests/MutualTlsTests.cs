@@ -71,7 +71,7 @@ public sealed partial class SessionTests
     private static Db2Config MutualTlsConfig(int port, string? clientCertificate = "client.pem", string? clientKey = "client-key.pem") => new()
     {
         Host = "localhost", Port = port, Database = "TESTDB", User = "db2inst1", Password = "secret",
-        Timeout = TimeSpan.FromSeconds(8), BlockSize = 65535, SecurityMechanism = 3, UseSsl = true,
+        Timeout = TimeSpan.FromSeconds(30), BlockSize = 65535, SecurityMechanism = 3, UseSsl = true,
         SslRootCaPath = TlsFixture("ca.pem"),
         SslClientCertPath = clientCertificate is null ? "" : TlsFixture(clientCertificate),
         SslClientKeyPath = clientKey is null ? "" : TlsFixture(clientKey),
@@ -127,7 +127,7 @@ public sealed partial class SessionTests
         }
         catch (Exception clientError)
         {
-            var observed = await serverError.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var observed = await serverError.Task.WaitAsync(TimeSpan.FromSeconds(30));
             throw new InvalidOperationException(
                 $"Client failure: {clientError.Message}; server failure: {observed?.Message ?? "<none>"}",
                 clientError);

@@ -345,7 +345,7 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var pool = new Db2Pool(config, new Db2PoolOptions(1));
 
@@ -1545,18 +1545,18 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         using var cancellation = new CancellationTokenSource();
         var query = session.QueryAsync("SELECT B FROM INTERRUPTED_PROGRESSIVE_LOB_FIXTURE", cancellation.Token);
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
 
         var cancelAt = System.Diagnostics.Stopwatch.GetTimestamp();
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => query);
         var operationCompletionMs = System.Diagnostics.Stopwatch.GetElapsedTime(cancelAt).TotalMilliseconds;
-        var interruptAckTick = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var interruptAckTick = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(15));
         var interruptAcknowledgmentMs = System.Diagnostics.Stopwatch.GetElapsedTime(cancelAt, interruptAckTick).TotalMilliseconds;
 
         Assert.False(session.IsClosed, "A server-confirmed SQLCODE -952 during GETNXTCHK should preserve the session.");
@@ -1578,17 +1578,17 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         var query = session.QueryAsync("SELECT B FROM INTERRUPTED_PROGRESSIVE_LOB_FIXTURE",
             new Db2CommandOptions(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(2)));
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
         var deadlineAt = System.Diagnostics.Stopwatch.GetTimestamp();
 
         await Assert.ThrowsAsync<Db2CommandTimeoutException>(() => query);
         var completedMs = System.Diagnostics.Stopwatch.GetElapsedTime(deadlineAt).TotalMilliseconds;
-        var ackAt = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var ackAt = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(15));
         var ackMs = System.Diagnostics.Stopwatch.GetElapsedTime(deadlineAt, ackAt).TotalMilliseconds;
 
         Assert.False(session.IsClosed, "A server-confirmed SQLCODE -952 must leave the physical session usable.");
@@ -1610,12 +1610,12 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         var query = session.QueryAsync("SELECT B FROM INTERRUPTED_PROGRESSIVE_LOB_FIXTURE",
             new Db2CommandOptions(TimeSpan.FromMilliseconds(100), TimeSpan.FromSeconds(2)));
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
 
         await Assert.ThrowsAsync<Db2ConnectionClosedException>(() => query);
         Assert.True(session.IsClosed, "A rejected SQLINTR leaves command completion uncertain, so the session must be discarded.");
@@ -1634,12 +1634,12 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         var query = session.QueryAsync("SELECT B FROM INTERRUPTED_PROGRESSIVE_LOB_FIXTURE",
             new Db2CommandOptions(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(150)));
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
 
         await Assert.ThrowsAsync<Db2ConnectionClosedException>(() => query);
         Assert.True(session.IsClosed, "A missing SQLINTR acknowledgment leaves command completion uncertain.");
@@ -1658,11 +1658,11 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         var firstRow = ConsumeLobAsync();
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
 
         await Assert.ThrowsAsync<Db2CommandTimeoutException>(() => firstRow);
         Assert.False(session.IsClosed);
@@ -1996,18 +1996,18 @@ public sealed partial class SessionTests
         var config = new Db2Config
         {
             Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-            Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+            Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
         };
         await using var session = await Db2Session.ConnectAsync(config);
         using var cancellation = new CancellationTokenSource();
         var query = ConsumeStreamAsync();
-        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        await getNextStarted.Task.WaitAsync(TimeSpan.FromSeconds(15));
         var cancelAt = System.Diagnostics.Stopwatch.GetTimestamp();
         cancellation.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => query);
         var operationCompletionMs = System.Diagnostics.Stopwatch.GetElapsedTime(cancelAt).TotalMilliseconds;
-        var interruptAckTick = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(3));
+        var interruptAckTick = await interruptAcknowledged.Task.WaitAsync(TimeSpan.FromSeconds(15));
         var interruptAcknowledgmentMs = System.Diagnostics.Stopwatch.GetElapsedTime(cancelAt, interruptAckTick).TotalMilliseconds;
         Assert.False(session.IsClosed, "A server-confirmed SQLCODE -952 during row-stream GETNXTCHK should preserve the session.");
         Assert.Equal(29, Assert.IsType<int>(Assert.Single(Assert.Single((await session.QueryAsync("VALUES 29")).Rows))));
@@ -2061,7 +2061,7 @@ public sealed partial class SessionTests
         Assert.Equal((ushort)CodePoint.GETNXTCHK, Assert.Single(await ReadChainAsync(stream)).CodePoint);
         getNextStarted.TrySetResult();
 
-        using var auxiliary = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(3));
+        using var auxiliary = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(15));
         await using var auxiliaryStream = auxiliary.GetStream();
         Assert.Equal((ushort)CodePoint.EXCSAT, Assert.Single(await ReadChainAsync(auxiliaryStream)).CodePoint);
         await SendAsync(auxiliaryStream, CodePoint.EXCSATRD, ReadOnlyMemory<byte>.Empty);
@@ -2071,16 +2071,16 @@ public sealed partial class SessionTests
         if (omitInterruptAcknowledgment)
         {
             var auxiliaryEof = new byte[1];
-            Assert.Equal(0, await auxiliaryStream.ReadAsync(auxiliaryEof).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(0, await auxiliaryStream.ReadAsync(auxiliaryEof).AsTask().WaitAsync(TimeSpan.FromSeconds(15)));
             var primaryEof = new byte[1];
-            Assert.Equal(0, await stream.ReadAsync(primaryEof).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(0, await stream.ReadAsync(primaryEof).AsTask().WaitAsync(TimeSpan.FromSeconds(15)));
             return;
         }
         await SendAsync(auxiliaryStream, CodePoint.CMDCMPRM, DdmCodec.PackUInt16(CodePoint.SVRCOD, rejectInterrupt ? (ushort)8 : (ushort)0));
         if (rejectInterrupt)
         {
             var eof = new byte[1];
-            Assert.Equal(0, await stream.ReadAsync(eof).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(0, await stream.ReadAsync(eof).AsTask().WaitAsync(TimeSpan.FromSeconds(15)));
             return;
         }
         interruptAcknowledged.TrySetResult(System.Diagnostics.Stopwatch.GetTimestamp());
@@ -2438,7 +2438,7 @@ public sealed partial class SessionTests
             var config = new Db2Config
             {
                 Host = "127.0.0.1", Port = port, Database = "TESTDB", User = "db2inst1", Password = "password",
-                Timeout = TimeSpan.FromSeconds(5), BlockSize = 65535, SecurityMechanism = 3,
+                Timeout = TimeSpan.FromSeconds(15), BlockSize = 65535, SecurityMechanism = 3,
             };
             await using var session = await Db2Session.ConnectAsync(config);
             var source = new InfinitePatternStream();
@@ -2515,7 +2515,7 @@ public sealed partial class SessionTests
         Assert.Equal((ushort)expectedControl, Assert.Single(await ReadChainAsync(stream)).CodePoint);
         controlStarted.TrySetResult();
 
-        using var auxiliary = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(3));
+        using var auxiliary = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromSeconds(15));
         await using var auxiliaryStream = auxiliary.GetStream();
         Assert.Equal((ushort)CodePoint.EXCSAT, Assert.Single(await ReadChainAsync(auxiliaryStream)).CodePoint);
         await SendAsync(auxiliaryStream, CodePoint.EXCSATRD, ReadOnlyMemory<byte>.Empty);

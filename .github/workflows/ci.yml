@@ -31,9 +31,12 @@ jobs:
       - name: Build test project
         run: dotnet build src/Db2.Tests/Db2.Tests.csproj --nologo -v q
 
+      # net10/net11 test hosts are timing-sensitive under concurrent TLS and
+      # cancellation load, so run the two target frameworks sequentially.
       - name: Offline unit and protocol tests
         run: >-
           dotnet test src/Db2.Tests/Db2.Tests.csproj --no-build --nologo -v q
+          -p:TestTfmsInParallel=false
           --filter 'FullyQualifiedName!~Live&Category!=Live&Category!=Db2Integration&Category!=KerberosIntegration&Category!=Secmec9Integration&Category!=Secmec7Integration'
           --logger 'trx;LogFileName=offline.trx'
           --results-directory '${{ runner.temp }}/offline-test-results'
